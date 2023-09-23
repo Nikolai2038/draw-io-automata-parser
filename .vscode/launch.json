@@ -7,6 +7,9 @@
             "terminalKind": "integrated",
             "name": "Bash-Debug (simplest configuration)",
             "program": "${file}",
+            "args": [
+                "./diagrams/0001-example.drawio"
+            ]
         }
     ]
 }

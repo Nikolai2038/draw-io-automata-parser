@@ -250,7 +250,8 @@ function automata_parser() {
   # done
 
   declare -a variables_names=()
-  declare -A variables_values_for_each_ellipse=()
+  declare -A lambda=()
+  declare -A delta=()
 
   for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
     local ellipse_id="${ellipses_ids["${ellipse_id_in_list}"]}"
@@ -281,24 +282,35 @@ function automata_parser() {
     declare -a arrow_ids
     mapfile -t arrow_ids <<< "${arrow_ids_string}" || return "$?"
 
+    local arrow_targets_string
+    arrow_targets_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_TARGET}")"
+    declare -a arrow_targets
+    mapfile -t arrow_targets <<< "${arrow_targets_string}" || return "$?"
+
     local arrow_id_in_list
     for ((arrow_id_in_list = 0; arrow_id_in_list < arrows_from_ellipse_count; arrow_id_in_list++)); do
       local arrow_id="${arrow_ids["${arrow_id_in_list}"]}"
       local arrow_value="${arrow_values["${arrow_id_in_list}"]}"
+      local arrow_target_id="${arrow_targets["${arrow_id_in_list}"]}"
+      local arrow_target_node
+      arrow_target_node="$(get_node_with_attribute_value "${ellipses}" "${ATTRIBUTE_ID}" "${arrow_target_id}")" || return "$?"
+      local arrow_target_value
+      arrow_target_value="$(get_node_attribute_value "${arrow_target_node}" "${ATTRIBUTE_VALUE}")" || return "$?"
 
       # DEBUG:
       # echo "arrow_id: $arrow_id"
       # echo "arrow_value: $arrow_value"
+      # echo "arrow_target_value: $arrow_target_value"
 
-      local arrow_change_variable_regexpr="([^\\/]+)\\/([^\\/]+)"
+      local arrow_variable_regexpr="([^\\/]+)\\/([^\\/]+)"
 
-      local arrow_change_variable_name
-      arrow_change_variable_name="$(echo "${arrow_value}" | sed -En "s/${arrow_change_variable_regexpr}/\1/p")" || return "$?"
+      local arrow_variable_name
+      arrow_variable_name="$(echo "${arrow_value}" | sed -En "s/${arrow_variable_regexpr}/\1/p")" || return "$?"
 
-      local arrow_change_variable_value
-      arrow_change_variable_value="$(echo "${arrow_value}" | sed -En "s/${arrow_change_variable_regexpr}/\2/p")" || return "$?"
+      local arrow_variable_value
+      arrow_variable_value="$(echo "${arrow_value}" | sed -En "s/${arrow_variable_regexpr}/\2/p")" || return "$?"
 
-      if [ -z "${arrow_change_variable_name}" ] || [ -z "${arrow_change_variable_value}" ]; then
+      if [ -z "${arrow_variable_name}" ] || [ -z "${arrow_variable_value}" ]; then
         echo "Failed to get variable name and value from arrow (id \"${arrow_id}\", value \"${arrow_value}\") from ellipse (id \"${ellipse_id}\", value \"${ellipse_value}\")! You must add text to arrow in format \"<variable name>/<variable value>\"" >&2
         return 1
       fi
@@ -311,24 +323,24 @@ function automata_parser() {
         local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
 
         # Collecting only unique names
-        if [ "${variable_name_in_list}" == "${arrow_change_variable_name}" ]; then
+        if [ "${variable_name_in_list}" == "${arrow_variable_name}" ]; then
           is_in_array_already=1
         fi
 
       done
 
       if ((!is_in_array_already)); then
-        variables_names+=("${arrow_change_variable_name}")
+        variables_names+=("${arrow_variable_name}")
       fi
 
-      local current_value_for_ellipse_and_variable_name="${variables_values_for_each_ellipse["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${arrow_change_variable_name}"]}"
-
-      if [ -n "${current_value_for_ellipse_and_variable_name}" ]; then
-        echo "From ellipse (id \"${ellipse_id}\", value \"${ellipse_value}\") there are more than one arrows with variable name \"${arrow_change_variable_name}\"!" >&2
+      local current_lambda="${lambda["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}"]}"
+      if [ -n "${current_lambda}" ]; then
+        echo "From ellipse (id \"${ellipse_id}\", value \"${ellipse_value}\") there are more than one arrows with variable name \"${arrow_variable_name}\"!" >&2
         return 1
       fi
 
-      variables_values_for_each_ellipse["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${arrow_change_variable_name}"]="${arrow_change_variable_value}"
+      lambda["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}"]="${arrow_variable_value}"
+      delta["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}"]="${arrow_target_value}"
     done
   done
 
@@ -345,20 +357,24 @@ function automata_parser() {
   # ----------------------------------------
   # Printing table's headers
   # ----------------------------------------
-  local table_header_1=""
-  local table_header_2=""
+  local table_header_lambda=""
+  local table_header_delta=""
+  local table_header_variables=""
 
   local variable_name_id_in_list
   for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
-    table_header_1+="${TABLE_BEFORE_CELL_VALUE}L${TABLE_AFTER_CELL_VALUE}|"
+    table_header_lambda+="${TABLE_BEFORE_CELL_VALUE}L${TABLE_AFTER_CELL_VALUE}|"
+    table_header_delta+="${TABLE_BEFORE_CELL_VALUE}D${TABLE_AFTER_CELL_VALUE}|"
 
     local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
-    table_header_2+="${TABLE_BEFORE_CELL_VALUE}${variable_name_in_list}${TABLE_AFTER_CELL_VALUE}|"
+    table_header_variables+="${TABLE_BEFORE_CELL_VALUE}${variable_name_in_list}${TABLE_AFTER_CELL_VALUE}|"
   done
-  table_header_1+=""
+  table_header_lambda+=""
 
-  echo -e "|${TABLE_BEFORE_CELL_VALUE} ${TABLE_AFTER_CELL_VALUE}|${table_header_1}"
-  echo -en "|${TABLE_BEFORE_CELL_VALUE} ${TABLE_AFTER_CELL_VALUE}|${table_header_2}"
+  local header=""
+
+  header+="|${TABLE_BEFORE_CELL_VALUE} ${TABLE_AFTER_CELL_VALUE}|${table_header_lambda}${table_header_delta}\n"
+  header+="|${TABLE_BEFORE_CELL_VALUE} ${TABLE_AFTER_CELL_VALUE}|${table_header_variables}${table_header_variables}"
   # ----------------------------------------
 
   # ----------------------------------------
@@ -372,14 +388,25 @@ function automata_parser() {
     local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
 
     result+="|${TABLE_BEFORE_CELL_VALUE}${ellipse_value}${TABLE_AFTER_CELL_VALUE}|"
+
     for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
       local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
-      local current_value_for_ellipse_and_variable_name="${variables_values_for_each_ellipse["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}"]}"
-      result+="${TABLE_BEFORE_CELL_VALUE}${current_value_for_ellipse_and_variable_name:-" "}${TABLE_AFTER_CELL_VALUE}|"
+
+      local current_lambda="${lambda["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}"]}"
+      result+="${TABLE_BEFORE_CELL_VALUE}${current_lambda:-" "}${TABLE_AFTER_CELL_VALUE}|"
     done
+
+    for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
+      local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
+
+      local current_delta="${delta["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}"]}"
+      result+="${TABLE_BEFORE_CELL_VALUE}${current_delta:-" "}${TABLE_AFTER_CELL_VALUE}|"
+    done
+
     result+="\n"
   done
 
+  echo -en "${header}"
   echo -e "${result}" | sort --unique
   # ----------------------------------------
 
