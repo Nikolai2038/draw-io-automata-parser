@@ -10,7 +10,10 @@ TABLE_AFTER_CELL_VALUE="   "
 TABLE_EMPTY_CELL="?"
 LAMBDA="L"
 DELTA="D"
-CALCULATE_K_ITERATION_LIMIT=50
+CALCULATE_K_ITERATION_LIMIT=5
+
+DO_NOT_PRINT_K_ID=0
+PRINT_K_ID=1
 
 declare -a ALPHABET=("A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z")
 ALPHABET_SIZE="${#ALPHABET[@]}"
@@ -71,6 +74,12 @@ function get_node_with_attribute_value() {
 }
 
 function calculate_K() {
+  local ellipses_values_as_string="${1}" && shift
+  if [ -z "${ellipses_values_as_string}" ]; then
+    echo "You need to specify ellipses values as string!" >&2
+    return 1
+  fi
+
   local lines_as_string="${1}" && shift
   if [ -z "${lines_as_string}" ]; then
     echo "You need to specify lines as string!" >&2
@@ -82,6 +91,9 @@ function calculate_K() {
     echo "You need to specify K id!" >&2
     return 1
   fi
+
+  declare -a ellipses_values
+  mapfile -t ellipses_values <<< "${ellipses_values_as_string}" || return "$?"
 
   declare -a lines
   mapfile -t lines <<< "${lines_as_string}" || return "$?"
@@ -113,7 +125,7 @@ function calculate_K() {
       K["${symbol}"]+=" "
     fi
 
-    K["${symbol}"]+="$((line_id + 1))"
+    K["${symbol}"]+="${ellipses_values["${line_id}"]}"
 
     # DEBUG:
     # echo "${symbol}: $((line_id + 1))"
@@ -132,6 +144,12 @@ function print_K() {
     return 1
   fi
 
+  local print_K_id="${1}" && shift
+  if [ -z "${K_id}" ]; then
+    echo "You need to specify print or do not print K_id!" >&2
+    return 1
+  fi
+
   echo -n "{"
 
   local is_first=1
@@ -139,7 +157,9 @@ function print_K() {
   local symbol_id
   for ((symbol_id = 0; symbol_id < ALPHABET_SIZE; symbol_id++)); do
     local symbol="${ALPHABET["${symbol_id}"]}"
-    local K_value="${K["${symbol}${K_id}"]}"
+    local class_name="${symbol}${K_id}"
+
+    local K_value="${K["${class_name}"]}"
 
     if [ -z "${K_value}" ]; then
       continue
@@ -151,10 +171,16 @@ function print_K() {
       echo -n ","
     fi
 
+    echo -n " ${symbol}"
+
     local K_value_pretty
     K_value_pretty="$(echo "${K_value}" | sed -E 's/ /,/g')" || return "$?"
 
-    echo -n " ${symbol}${K_id}={${K_value_pretty}}"
+    if ((print_K_id)); then
+      echo -n "${K_id}={${K_value_pretty}}"
+    else
+      echo -n "={${K_value_pretty}}"
+    fi
   done
 
   echo " }"
@@ -430,22 +456,7 @@ function automata_parser() {
       fi
 
       # Collecting all variables names into "variables_names" array
-      local variable_name_id_in_list
-      local variables_names_count="${#variables_names[@]}"
-      local is_in_array_already=0
-      for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
-        local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
-
-        # Collecting only unique names
-        if [ "${variable_name_in_list}" == "${arrow_variable_name}" ]; then
-          is_in_array_already=1
-        fi
-
-      done
-
-      if ((!is_in_array_already)); then
-        variables_names+=("${arrow_variable_name}")
-      fi
+      variables_names+=("${arrow_variable_name}")
 
       local current_lambda="${cells["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
       if [ -n "${current_lambda}" ]; then
@@ -472,15 +483,19 @@ function automata_parser() {
   # Prepare for K calculations
   # ----------------------------------------
   declare -A lines_to_find_K=()
+  local ellipses_values_as_string
 
   for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
     local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
 
     lines_to_find_K["0"]+="${ellipse_value}"
+    ellipses_values_as_string+="${ellipse_value}"
 
     # Make sure to not add extra line because we count them in calculate_K function
     if ((ellipse_id_in_list != ellipses_count - 1)); then
       lines_to_find_K["0"]+="
+"
+      ellipses_values_as_string+="
 "
     fi
 
@@ -498,6 +513,9 @@ function automata_parser() {
 
     result+="\n"
   done
+
+  # DEBUG:
+  # declare -p lines_to_find_K
   # ----------------------------------------
 
   # ----------------------------------------
@@ -507,54 +525,82 @@ function automata_parser() {
   local prev_K="0"
   local current_K="1"
   local K_id=0
+  local calculated_Ks=0
 
   while [[ "${current_K}" != "${prev_K}" ]] && ((K_id < CALCULATE_K_ITERATION_LIMIT)); do
+    # For Ks greater than 1 we need to calculate lines_to_find_K based on previous K
+    if ((K_id > 1)); then
+      local K_id_prev="$((K_id - 1))"
+
+      for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
+        local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
+
+        for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
+          local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
+          local current_delta="${cells["${DELTA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
+
+          # Find cell value for previous K
+          local K_cell_value=""
+
+          local symbol_id
+          for ((symbol_id = 0; symbol_id < ALPHABET_SIZE; symbol_id++)); do
+            local class_name="${ALPHABET["${symbol_id}"]}${K_id_prev}"
+            local K_value="${K["${class_name}"]}"
+
+            if [ -z "${K_value}" ]; then
+              continue
+            fi
+
+            # Add extra spaces to match first and last numbers in K_value
+            if [[ " ${K_value} " == *" ${current_delta} "* ]]; then
+              K_cell_value="${class_name}"
+              break
+            fi
+          done
+
+          if [[ -z "${K_cell_value}" ]]; then
+            echo "Calculation for K cell value failed!" >&2
+            return 1
+          fi
+
+          # DEBUG:
+          # echo "current_delta: ${current_delta}; ellipse_value: ${ellipse_value}; variable_name_in_list: ${variable_name_in_list}; K_cell_value: ${K_cell_value}"
+
+          cells["K${K_id_prev}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${K_cell_value}"
+
+          lines_to_find_K["${K_id}"]+=" ${K_cell_value:-"${TABLE_EMPTY_CELL}"}"
+        done
+
+        # Make sure to not add extra line because we count them in calculate_K function
+        if ((ellipse_id_in_list != ellipses_count - 1)); then
+          lines_to_find_K["${K_id}"]+="
+"
+        fi
+
+        result+="\n"
+      done
+    fi
+
     echo "Calculate K${K_id}..."
-    calculate_K "${lines_to_find_K["${K_id}"]}" "${K_id}" || return "$?"
+
+    calculate_K "${ellipses_values_as_string}" "${lines_to_find_K["${K_id}"]}" "${K_id}" || return "$?"
+    ((calculated_Ks++))
 
     prev_K="${current_K}"
-    current_K="$(print_K "${K_id}")" || return "$?"
+    current_K="$(print_K "${K_id}" "${DO_NOT_PRINT_K_ID}")" || return "$?"
+
+    # DEBUG:
+    echo "prev_K: ${prev_K}"
+    echo "current_K: ${current_K}"
 
     ((K_id++))
   done
 
+  local was_error=0
   if ((K_id >= CALCULATE_K_ITERATION_LIMIT)); then
     echo "Calculate K iteration limit (${K_id}/${CALCULATE_K_ITERATION_LIMIT} iterations) was reached! If there are huge automate and you think this is a mistake, increase \"CALCULATE_K_ITERATION_LIMIT\" variable." >&2
-    return 1
+    was_error=1
   fi
-  # ----------------------------------------
-
-  # ----------------------------------------
-  # Prepare for K calculations
-  # ----------------------------------------
-  for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
-    local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
-
-    lines_to_find_K["0"]+="${ellipse_value}"
-
-    # Make sure to not add extra line because we count them in calculate_K function
-    if ((ellipse_id_in_list != ellipses_count - 1)); then
-      lines_to_find_K["0"]+="
-"
-    fi
-
-    for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
-      local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
-      local current_lambda="${cells["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
-      lines_to_find_K["1"]+=" ${current_lambda:-"${TABLE_EMPTY_CELL}"}"
-
-      cells["K${K_id}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${arrow_variable_value}"
-
-    done
-
-    # Make sure to not add extra line because we count them in calculate_K function
-    if ((ellipse_id_in_list != ellipses_count - 1)); then
-      lines_to_find_K["1"]+="
-"
-    fi
-
-    result+="\n"
-  done
   # ----------------------------------------
 
   # ----------------------------------------
@@ -617,16 +663,76 @@ function automata_parser() {
   # Print K
   # ----------------------------------------
   echo ""
-  for ((K_id = 0; K_id < 2; K_id++)); do
+  for ((K_id = 0; K_id < calculated_Ks; K_id++)); do
     echo -n "K${K_id} = "
-    print_K "${K_id}" || return "$?"
+    print_K "${K_id}" "${PRINT_K_ID}" || return "$?"
   done
   # ----------------------------------------
+
+  echo ""
+  if ((!was_error)); then
+    local last_calculated_K_id="$((calculated_Ks - 1))"
+
+    echo "K${last_calculated_K_id} == K$((last_calculated_K_id - 1)) == K"
+
+    declare -a last_calculated_K_symbols=()
+
+    local symbol_id
+    for ((symbol_id = 0; symbol_id < ALPHABET_SIZE; symbol_id++)); do
+      local symbol="${ALPHABET["${symbol_id}"]}"
+      local class_name="${symbol}${last_calculated_K_id}"
+      local K_value="${K["${class_name}"]}"
+
+      if [ -z "${K_value}" ]; then
+        continue
+      fi
+
+      last_calculated_K_symbols+=("${symbol}")
+    done
+
+    if [[ -z "${K_cell_value}" ]]; then
+      echo "Calculation for K cell value failed!" >&2
+      return 1
+    fi
+
+    # ----------------------------------------
+    # Print Smin
+    # ----------------------------------------
+    echo -n "Smin = {"
+
+    local is_first=1
+
+    local last_calculated_K_symbols_count="${#last_calculated_K_symbols[@]}"
+    for ((symbol_id = 0; symbol_id < last_calculated_K_symbols_count; symbol_id++)); do
+      local symbol="${last_calculated_K_symbols["${symbol_id}"]}"
+
+      if ((is_first)); then
+        is_first=0
+      else
+        echo -n ","
+      fi
+
+      echo -n " ${symbol}"
+    done
+
+    echo " }"
+    # ----------------------------------------
+
+    # TODO: Calculate u0min
+    echo -n "u0min = ..."
+
+    # TODO: Calculate result table
+    # ...
+
+    # TODO: Insert K columns in first table
+    # ...
+  fi
+
   echo "================================================================================"
   echo ""
 
   echo "Parsing file \"${filePath}\": done!" >&2
-  return 0
+  return "${was_error}"
 }
 
 # If script is not sourced - we execute it
