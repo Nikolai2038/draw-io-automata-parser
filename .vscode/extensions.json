@@ -1,0 +1,11 @@
+{
+    "recommendations": [
+        "foxundermoon.shell-format",
+        "mads-hartmann.bash-ide-vscode",
+        "remisa.shellman",
+        "rogalmic.bash-debug",
+        "tetradresearch.vscode-h2o",
+        "timonwong.shellcheck",
+        "truman.autocomplate-shell",
+    ]
+}
