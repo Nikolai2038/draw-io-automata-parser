@@ -7,6 +7,11 @@ ATTRIBUTE_VALUE="value"
 ARRAY_INDEX_SEPARATOR="___"
 TABLE_BEFORE_CELL_VALUE="   "
 TABLE_AFTER_CELL_VALUE="   "
+TABLE_EMPTY_CELL="?"
+
+declare -a ALPHABET=("A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z")
+ALPHABET_SIZE="${#ALPHABET[@]}"
+declare -A K=()
 
 function get_nodes_count() {
   local xml="${1}" && shift
@@ -58,6 +63,57 @@ function get_node_with_attribute_value() {
   fi
 
   echo "<xml>${xml}</xml>" | xpath -q -e "(//mxCell[@${attribute_name}=\"${attribute_value}\"]" || return "$?"
+
+  return 0
+}
+
+function calculate_K() {
+  local lines_as_string="${1}" && shift
+  if [ -z "${lines_as_string}" ]; then
+    echo "You need to specify lines as string!" >&2
+    return 1
+  fi
+
+  local K_number="${1}" && shift
+  if [ -z "${K_number}" ]; then
+    echo "You need to specify K number!" >&2
+    return 1
+  fi
+
+  declare -a lines
+  mapfile -t lines <<< "${lines_as_string}" || return "$?"
+
+  local lines_count="${#lines[@]}"
+
+  # DEBUG:
+  # echo "lines_count: $lines_count"
+
+  local free_symbol_id=0
+  declare -A line_to_symbol=()
+
+  local line_id
+  for ((line_id = 0; line_id < lines_count; line_id++)); do
+    local line="${lines["${line_id}"]}"
+
+    local symbol="${line_to_symbol["${line}"]}"
+    if [ -z "${symbol}" ]; then
+      line_to_symbol["${line}"]="${ALPHABET["${free_symbol_id}"]}${K_number}"
+      symbol="${line_to_symbol["${line}"]}"
+      ((free_symbol_id++))
+      if ((free_symbol_id >= ALPHABET_SIZE)); then
+        echo "Need to increase ALPHABET!" >&2
+        return 1
+      fi
+    fi
+
+    K["${symbol}"]+=" $((line_id + 1))"
+
+    # DEBUG:
+    # echo "${symbol}: $((line_id + 1))"
+  done
+
+  # DEBUG:
+  # declare -p K
 
   return 0
 }
@@ -355,7 +411,7 @@ function automata_parser() {
   # echo "variables_names_count: $variables_names_count"
 
   # ----------------------------------------
-  # Printing table's headers
+  # Creating table's headers
   # ----------------------------------------
   local table_header_lambda=""
   local table_header_delta=""
@@ -378,10 +434,12 @@ function automata_parser() {
   # ----------------------------------------
 
   # ----------------------------------------
-  # Printing table's contents
+  # Creating table's contents
   # ----------------------------------------
   # Result will be printed separately because we will sort it (to sort ellipses values)
   local result=""
+
+  declare -A lines_to_find_K=()
 
   for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
     local ellipse_id="${ellipses_ids["${ellipse_id_in_list}"]}"
@@ -389,26 +447,76 @@ function automata_parser() {
 
     result+="|${TABLE_BEFORE_CELL_VALUE}${ellipse_value}${TABLE_AFTER_CELL_VALUE}|"
 
+    lines_to_find_K["0"]+="${ellipse_value}"
+
+    # Make sure to not add extra line because we count them in calculate_K function
+    if ((ellipse_id_in_list != ellipses_count - 1)); then
+      lines_to_find_K["0"]+="
+"
+    fi
+
     for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
       local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
 
       local current_lambda="${lambda["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}"]}"
-      result+="${TABLE_BEFORE_CELL_VALUE}${current_lambda:-" "}${TABLE_AFTER_CELL_VALUE}|"
+      result+="${TABLE_BEFORE_CELL_VALUE}${current_lambda:-"${TABLE_EMPTY_CELL}"}${TABLE_AFTER_CELL_VALUE}|"
+
+      lines_to_find_K["1"]+=" ${current_lambda:-"${TABLE_EMPTY_CELL}"}"
     done
+
+    # Make sure to not add extra line because we count them in calculate_K function
+    if ((ellipse_id_in_list != ellipses_count - 1)); then
+      lines_to_find_K["1"]+="
+"
+    fi
 
     for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
       local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
 
       local current_delta="${delta["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}"]}"
-      result+="${TABLE_BEFORE_CELL_VALUE}${current_delta:-" "}${TABLE_AFTER_CELL_VALUE}|"
+      result+="${TABLE_BEFORE_CELL_VALUE}${current_delta:-"${TABLE_EMPTY_CELL}"}${TABLE_AFTER_CELL_VALUE}|"
     done
 
     result+="\n"
   done
+  # ----------------------------------------
 
   echo -en "${header}"
   echo -e "${result}" | sort --unique
-  # ----------------------------------------
+
+  local K_id
+  for ((K_id = 0; K_id < 2; K_id++)); do
+    # Calculate K
+    calculate_K "${lines_to_find_K["${K_id}"]}" "${K_id}" || return "$?"
+
+    # DEBUG:
+    # declare -p K
+
+    # ----------------------------------------
+    # Print K
+    # ----------------------------------------
+    echo -n "K${K_id} = {"
+
+    local symbol_id
+    for ((symbol_id = 0; symbol_id < ALPHABET_SIZE; symbol_id++)); do
+      local symbol="${ALPHABET["${symbol_id}"]}"
+      local K_value="${K["${symbol}${K_id}"]}"
+
+      if [ -z "${K_value}" ]; then
+        continue
+      fi
+
+      echo -n " {${K_value} }"
+
+      # echo -n "K${K_number}: { "
+      # for key in "${!K[@]}"; do
+      #   echo -n "{${K["${key}"]} }, "
+      # done
+      # echo "}"
+    done
+    echo " }"
+    # ----------------------------------------
+  done
 
   echo "Parsing file \"${filePath}\": done!" >&2
   return 0
