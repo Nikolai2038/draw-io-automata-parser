@@ -2,7 +2,11 @@
 
 ATTRIBUTE_ID="id"
 ATTRIBUTE_TARGET="target"
+ATTRIBUTE_SOURCE="source"
 ATTRIBUTE_VALUE="value"
+ARRAY_INDEX_SEPARATOR="___"
+TABLE_BEFORE_CELL_VALUE="   "
+TABLE_AFTER_CELL_VALUE="   "
 
 function get_nodes_count() {
   local xml="${1}" && shift
@@ -205,6 +209,178 @@ function automata_parser() {
     fi
   fi
   echo "No disconnected arrows found!" >&2
+  # ----------------------------------------
+
+  # ----------------------------------------
+  # Connected arrows
+  # ----------------------------------------
+  local connected_arrows
+  connected_arrows="$(echo "<xml>${arrows}</xml>" | xpath -q -e "
+    //mxCell[
+      @source
+      and
+      @target
+    ]
+  ")" || return "$?"
+  local connected_arrows_count
+  connected_arrows_count="$(get_nodes_count "${connected_arrows}")" || return "$?"
+
+  if ((connected_arrows_count < 1)); then
+    echo "No connected arrows found!" >&2
+    return 1
+  fi
+  echo "Found ${connected_arrows_count} connected arrows!" >&2
+  # ----------------------------------------
+
+  local ellipses_ids_string
+  ellipses_ids_string="$(get_node_attribute_value "${ellipses}" "${ATTRIBUTE_ID}")" || return "$?"
+  declare -a ellipses_ids
+  mapfile -t ellipses_ids <<< "${ellipses_ids_string}" || return "$?"
+
+  local ellipses_values_string
+  ellipses_values_string="$(get_node_attribute_value "${ellipses}" "${ATTRIBUTE_VALUE}")" || return "$?"
+  declare -a ellipses_values
+  mapfile -t ellipses_values <<< "${ellipses_values_string}" || return "$?"
+
+  # TODO: Add this check later
+  # declare -a ellipses_is_in_scheme=()
+  # local ellipse_id_in_list
+  # for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
+  #   ellipses_is_in_scheme+=("0")
+  # done
+
+  declare -a variables_names=()
+  declare -A variables_values_for_each_ellipse=()
+
+  for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
+    local ellipse_id="${ellipses_ids["${ellipse_id_in_list}"]}"
+    local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
+
+    local arrows_from_ellipse
+    arrows_from_ellipse="$(get_node_with_attribute_value "${connected_arrows}" "${ATTRIBUTE_SOURCE}" "${ellipse_id}")" || return "$?"
+    local arrows_from_ellipse_count
+    arrows_from_ellipse_count="$(get_nodes_count "${arrows_from_ellipse}")" || return "$?"
+    if ((arrows_from_ellipse_count < 1)); then
+      continue
+    fi
+
+    # DEBUG:
+    # echo "arrows_from_ellipse_count: $arrows_from_ellipse_count"
+    # echo "arrows_from_ellipse: $arrows_from_ellipse"
+
+    local arrow_values_string
+    arrow_values_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_VALUE}")"
+    declare -a arrow_values
+    mapfile -t arrow_values <<< "${arrow_values_string}" || return "$?"
+
+    # DEBUG:
+    # echo "arrow_values_string: $arrow_values_string"
+
+    local arrow_ids_string
+    arrow_ids_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_ID}")"
+    declare -a arrow_ids
+    mapfile -t arrow_ids <<< "${arrow_ids_string}" || return "$?"
+
+    local arrow_id_in_list
+    for ((arrow_id_in_list = 0; arrow_id_in_list < arrows_from_ellipse_count; arrow_id_in_list++)); do
+      local arrow_id="${arrow_ids["${arrow_id_in_list}"]}"
+      local arrow_value="${arrow_values["${arrow_id_in_list}"]}"
+
+      # DEBUG:
+      # echo "arrow_id: $arrow_id"
+      # echo "arrow_value: $arrow_value"
+
+      local arrow_change_variable_regexpr="([^\\/]+)\\/([^\\/]+)"
+
+      local arrow_change_variable_name
+      arrow_change_variable_name="$(echo "${arrow_value}" | sed -En "s/${arrow_change_variable_regexpr}/\1/p")" || return "$?"
+
+      local arrow_change_variable_value
+      arrow_change_variable_value="$(echo "${arrow_value}" | sed -En "s/${arrow_change_variable_regexpr}/\2/p")" || return "$?"
+
+      if [ -z "${arrow_change_variable_name}" ] || [ -z "${arrow_change_variable_value}" ]; then
+        echo "Failed to get variable name and value from arrow (id \"${arrow_id}\", value \"${arrow_value}\") from ellipse (id \"${ellipse_id}\", value \"${ellipse_value}\")! You must add text to arrow in format \"<variable name>/<variable value>\"" >&2
+        return 1
+      fi
+
+      # Collecting all variables names into "variables_names" array
+      local variable_name_id_in_list
+      local variables_names_count="${#variables_names[@]}"
+      local is_in_array_already=0
+      for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
+        local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
+
+        # Collecting only unique names
+        if [ "${variable_name_in_list}" == "${arrow_change_variable_name}" ]; then
+          is_in_array_already=1
+        fi
+
+      done
+
+      if ((!is_in_array_already)); then
+        variables_names+=("${arrow_change_variable_name}")
+      fi
+
+      local current_value_for_ellipse_and_variable_name="${variables_values_for_each_ellipse["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${arrow_change_variable_name}"]}"
+
+      if [ -n "${current_value_for_ellipse_and_variable_name}" ]; then
+        echo "From ellipse (id \"${ellipse_id}\", value \"${ellipse_value}\") there are more than one arrows with variable name \"${arrow_change_variable_name}\"!" >&2
+        return 1
+      fi
+
+      variables_values_for_each_ellipse["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${arrow_change_variable_name}"]="${arrow_change_variable_value}"
+    done
+  done
+
+  # Sort variables names
+  local variables_names_string_sorted
+  variables_names_string_sorted="$(echo "${variables_names[@]}" | tr ' ' '\n' | sort --unique)" || return "$?"
+  mapfile -t variables_names <<< "${variables_names_string_sorted}" || return "$?"
+
+  local variables_names_count="${#variables_names[@]}"
+
+  # DEBUG:
+  # echo "variables_names_count: $variables_names_count"
+
+  # ----------------------------------------
+  # Printing table's headers
+  # ----------------------------------------
+  local table_header_1=""
+  local table_header_2=""
+
+  local variable_name_id_in_list
+  for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
+    table_header_1+="${TABLE_BEFORE_CELL_VALUE}L${TABLE_AFTER_CELL_VALUE}|"
+
+    local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
+    table_header_2+="${TABLE_BEFORE_CELL_VALUE}${variable_name_in_list}${TABLE_AFTER_CELL_VALUE}|"
+  done
+  table_header_1+=""
+
+  echo -e "|${TABLE_BEFORE_CELL_VALUE} ${TABLE_AFTER_CELL_VALUE}|${table_header_1}"
+  echo -en "|${TABLE_BEFORE_CELL_VALUE} ${TABLE_AFTER_CELL_VALUE}|${table_header_2}"
+  # ----------------------------------------
+
+  # ----------------------------------------
+  # Printing table's contents
+  # ----------------------------------------
+  # Result will be printed separately because we will sort it (to sort ellipses values)
+  local result=""
+
+  for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
+    local ellipse_id="${ellipses_ids["${ellipse_id_in_list}"]}"
+    local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
+
+    result+="|${TABLE_BEFORE_CELL_VALUE}${ellipse_value}${TABLE_AFTER_CELL_VALUE}|"
+    for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
+      local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
+      local current_value_for_ellipse_and_variable_name="${variables_values_for_each_ellipse["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}"]}"
+      result+="${TABLE_BEFORE_CELL_VALUE}${current_value_for_ellipse_and_variable_name:-" "}${TABLE_AFTER_CELL_VALUE}|"
+    done
+    result+="\n"
+  done
+
+  echo -e "${result}" | sort --unique
   # ----------------------------------------
 
   echo "Parsing file \"${filePath}\": done!" >&2
