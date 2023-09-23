@@ -3,17 +3,18 @@
 SCRIPTS_VERSION="0.1.0"
 
 ARRAY_INDEX_SEPARATOR="___"
+
 TABLE_BEFORE_CELL_VALUE="   "
 TABLE_AFTER_CELL_VALUE="   "
 TABLE_EMPTY_CELL="?"
+
 LAMBDA="L"
 DELTA="D"
+
 CALCULATE_K_ITERATION_LIMIT=50
 
 DO_NOT_PRINT_CLASS_FAMILY_ID=0
 DO_PRINT_CLASS_FAMILY_ID=1
-
-declare -A K=()
 
 # Start main script of Automata Parser
 function automata_parser() {
@@ -30,6 +31,8 @@ function automata_parser() {
   source "./scripts/4_inner_functions/xpath/get_node_with_attribute_value.sh" || return "$?"
   source "./scripts/4_inner_functions/class_family_calculate.sh" || return "$?"
   source "./scripts/4_inner_functions/class_family_print.sh" || return "$?"
+  source "./scripts/3_inner_constants/class_family.sh" || return "$?"
+  source "./scripts/3_inner_constants/class_symbols.sh" || return "$?"
   cd - >/dev/null || return "$?"
 
   # ========================================
@@ -52,15 +55,23 @@ function automata_parser() {
 
   print_info "Parsing..."
 
-  local ellipses_ids_string
-  ellipses_ids_string="$(get_node_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_ID}")" || return "$?"
+  local ellipses_ids_as_string
+  ellipses_ids_as_string="$(get_node_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_ID}")" || return "$?"
+  if [ -z "${ellipses_ids_as_string}" ]; then
+    print_error "Ellipses ids as string is empty!"
+    return 1
+  fi
   declare -a ellipses_ids
-  mapfile -t ellipses_ids <<<"${ellipses_ids_string}" || return "$?"
+  mapfile -t ellipses_ids <<<"${ellipses_ids_as_string}" || return "$?"
 
-  local ellipses_values_string
-  ellipses_values_string="$(get_node_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_VALUE}")" || return "$?"
+  local ellipses_values_as_string
+  ellipses_values_as_string="$(get_node_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_VALUE}")" || return "$?"
+  if [ -z "${ellipses_values_as_string}" ]; then
+    print_error "Ellipses values as string is empty!"
+    return 1
+  fi
   declare -a ellipses_values
-  mapfile -t ellipses_values <<<"${ellipses_values_string}" || return "$?"
+  mapfile -t ellipses_values <<<"${ellipses_values_as_string}" || return "$?"
 
   # TODO: Add this check later
   # declare -a ellipses_is_in_scheme=()
@@ -74,6 +85,7 @@ function automata_parser() {
   # Format for element: `cells["<column header 1 name><separator><column header 2 name><separator><row header name>"]="<cell value>"`
   declare -A cells=()
 
+  local ellipse_id_in_list
   for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
     local ellipse_id="${ellipses_ids["${ellipse_id_in_list}"]}"
     local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
@@ -87,17 +99,14 @@ function automata_parser() {
       continue
     fi
 
-    # DEBUG:
-    # echo "arrows_from_ellipse_count: $arrows_from_ellipse_count"
-    # echo "arrows_from_ellipse: $arrows_from_ellipse"
-
-    local arrow_values_string
-    arrow_values_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_VALUE}")"
+    local arrow_values_as_string
+    arrow_values_as_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_VALUE}")"
+    if [ -z "${arrow_values_as_string}" ]; then
+      print_error "Arrow values as string is empty!"
+      return 1
+    fi
     declare -a arrow_values
-    mapfile -t arrow_values <<<"${arrow_values_string}" || return "$?"
-
-    # DEBUG:
-    # echo "arrow_values_string: $arrow_values_string"
+    mapfile -t arrow_values <<<"${arrow_values_as_string}" || return "$?"
 
     local arrow_ids_string
     arrow_ids_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_ID}")"
@@ -168,22 +177,19 @@ function automata_parser() {
   # Prepare for K calculations
   # ----------------------------------------
   declare -A lines_to_find_K=()
-  local ellipses_values_as_string
 
   for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
     local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
 
     lines_to_find_K["0"]+="${ellipse_value}"
-    ellipses_values_as_string+="${ellipse_value}"
 
     # Make sure to not add extra line because we count them in class_family_calculate function
     if ((ellipse_id_in_list != ellipses_count - 1)); then
       lines_to_find_K["0"]+="
 "
-      ellipses_values_as_string+="
-"
     fi
 
+    local variable_name_id_in_list
     for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
       local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
       local current_lambda="${cells["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
@@ -207,13 +213,15 @@ function automata_parser() {
   # Initialization values must be different here
   local prev_K="0"
   local current_K="1"
-  local familyOfClassesId=0
+  local class_family_id=0
   local calculated_Ks=0
 
-  while [[ "${current_K}" != "${prev_K}" ]] && ((familyOfClassesId < CALCULATE_K_ITERATION_LIMIT)); do
+  while [[ "${current_K}" != "${prev_K}" ]] && ((class_family_id < CALCULATE_K_ITERATION_LIMIT)); do
+    print_info "Calculate K${class_family_id}..."
+
     # For Ks greater than 1 we need to calculate lines_to_find_K based on previous K
-    if ((familyOfClassesId > 1)); then
-      local familyOfClassesId_prev="$((familyOfClassesId - 1))"
+    if ((class_family_id > 1)); then
+      local familyOfClassesId_prev="$((class_family_id - 1))"
 
       for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
         local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
@@ -242,7 +250,7 @@ function automata_parser() {
           done
 
           if [[ -z "${K_cell_value}" ]]; then
-            print_error "Calculation for K cell value failed!"
+            print_error "Calculation for ${CLASS_FAMILY_SYMBOL} cell value failed! class_name = \"${class_name}\""
             return 1
           fi
 
@@ -251,35 +259,31 @@ function automata_parser() {
 
           cells["K${familyOfClassesId_prev}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${K_cell_value}"
 
-          lines_to_find_K["${familyOfClassesId}"]+=" ${K_cell_value:-"${TABLE_EMPTY_CELL}"}"
+          lines_to_find_K["${class_family_id}"]+=" ${K_cell_value:-"${TABLE_EMPTY_CELL}"}"
         done
 
         # Make sure to not add extra line because we count them in class_family_calculate function
         if ((ellipse_id_in_list != ellipses_count - 1)); then
-          lines_to_find_K["${familyOfClassesId}"]+="
+          lines_to_find_K["${class_family_id}"]+="
 "
         fi
       done
     fi
 
-    print_info "Calculate K${familyOfClassesId}..."
-
-    class_family_calculate "${ellipses_values_as_string}" "${lines_to_find_K["${familyOfClassesId}"]}" "${familyOfClassesId}" || return "$?"
+    class_family_calculate "${ellipses_values_as_string}" "${lines_to_find_K["${class_family_id}"]}" "${class_family_id}" || return "$?"
     ((calculated_Ks++))
 
     prev_K="${current_K}"
-    current_K="$(class_family_print "${familyOfClassesId}" "${DO_NOT_PRINT_CLASS_FAMILY_ID}")" || return "$?"
+    current_K="$(class_family_print "${class_family_id}" "${DO_NOT_PRINT_CLASS_FAMILY_ID}")" || return "$?"
 
-    # DEBUG:
-    # echo "prev_K: ${prev_K}"
-    # echo "current_K: ${current_K}"
+    print_info "K${class_family_id} = $(class_family_print "${class_family_id}" "${DO_PRINT_CLASS_FAMILY_ID}")" || return "$?"
 
-    ((familyOfClassesId++))
+    ((class_family_id++))
   done
 
   local was_error=0
-  if ((familyOfClassesId >= CALCULATE_K_ITERATION_LIMIT)); then
-    print_error "Calculate K iteration limit (${familyOfClassesId}/${CALCULATE_K_ITERATION_LIMIT} iterations) was reached! If there are huge automate and you think this is a mistake, increase \"CALCULATE_K_ITERATION_LIMIT\" variable."
+  if ((class_family_id >= CALCULATE_K_ITERATION_LIMIT)); then
+    print_error "Calculate ${CLASS_FAMILY_SYMBOL} iteration limit (${class_family_id}/${CALCULATE_K_ITERATION_LIMIT} iterations) was reached! If there are huge automate, and you think this is a mistake, increase \"CALCULATE_K_ITERATION_LIMIT\" variable."
     was_error=1
   fi
   # ----------------------------------------
@@ -341,16 +345,16 @@ function automata_parser() {
   # ----------------------------------------
   # Print K
   # ----------------------------------------
-  for ((familyOfClassesId = 0; familyOfClassesId < calculated_Ks; familyOfClassesId++)); do
-    echo -n "K${familyOfClassesId} = "
-    class_family_print "${familyOfClassesId}" "${DO_PRINT_CLASS_FAMILY_ID}" || return "$?"
+  for ((class_family_id = 0; class_family_id < calculated_Ks; class_family_id++)); do
+    echo -n "K${class_family_id} = "
+    class_family_print "${class_family_id}" "${DO_PRINT_CLASS_FAMILY_ID}" || return "$?"
   done
   # ----------------------------------------
 
   if ((!was_error)); then
     local last_calculated_familyOfClassesId="$((calculated_Ks - 1))"
 
-    echo "K${last_calculated_familyOfClassesId} == K$((last_calculated_familyOfClassesId - 1)) == K"
+    echo "${CLASS_FAMILY_SYMBOL}${last_calculated_familyOfClassesId} == ${CLASS_FAMILY_SYMBOL}$((last_calculated_familyOfClassesId - 1)) == ${CLASS_FAMILY_SYMBOL}"
 
     declare -a last_calculated_K_symbols=()
 
@@ -368,7 +372,7 @@ function automata_parser() {
     done
 
     if [[ -z "${K_cell_value}" ]]; then
-      print_error "Calculation for K cell value failed!"
+      print_error "Calculation for ${CLASS_FAMILY_SYMBOL} cell value failed!"
       return 1
     fi
 

@@ -113,7 +113,7 @@ function load_xml() {
     return 1
   fi
 
-  local start_arrow_xml="${start_arrows_count}"
+  local start_arrow_xml="${start_arrows_xml}"
   print_success "Start arrow found!"
 
   # Find first ellipsis id
@@ -183,7 +183,7 @@ function load_xml() {
     print_error "No connected arrows found!"
     return 1
   fi
-  print_success "Found ${connected_arrows_count} connected arrows!"
+  print_success "Found ${C_HIGHLIGHT}${connected_arrows_count}${C_RETURN} connected arrows!"
   # ----------------------------------------
 
   print_success "Loading file \"${file_path}\": done!"

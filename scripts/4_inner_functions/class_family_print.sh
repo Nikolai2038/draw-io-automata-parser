@@ -12,6 +12,7 @@ function class_family_print() {
   cd "$(dirname "${BASH_SOURCE[0]}")" || return "$?"
   source "../2_external_functions/messages.sh" || return "$?"
   source "../3_inner_constants/class_symbols.sh" || return "$?"
+  source "../3_inner_constants/class_family.sh" || return "$?"
   cd - >/dev/null || return "$?"
 
   # ========================================
@@ -58,7 +59,7 @@ function class_family_print() {
     echo -n " ${class_symbol}"
 
     local class_value_with_commas
-    class_value_with_commas="$(echo "${K_value}" | sed -E 's/ /,/g')" || return "$?"
+    class_value_with_commas="$(echo "${class_value}" | sed -E 's/ /,/g')" || return "$?"
 
     if ((do_print_class_family_id)); then
       echo -n "${class_family_id}={${class_value_with_commas}}"
