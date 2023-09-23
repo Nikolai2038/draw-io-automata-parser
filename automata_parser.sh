@@ -23,23 +23,21 @@ function automata_parser() {
   # ========================================
 
   cd "$(dirname "${BASH_SOURCE[0]}")" || return "$?"
-  source "./scripts/2_external_functions/package/install_command.sh" || return "$?"
-  source "./scripts/2_external_functions/messages.sh" || return "$?"
-  source "./scripts/4_inner_functions/xpath/load_xml.sh" || return "$?"
-  source "./scripts/4_inner_functions/xpath/get_nodes_count.sh" || return "$?"
-  source "./scripts/4_inner_functions/xpath/get_node_attribute_value.sh" || return "$?"
-  source "./scripts/4_inner_functions/xpath/get_node_with_attribute_value.sh" || return "$?"
-  source "./scripts/4_inner_functions/class_family_calculate.sh" || return "$?"
-  source "./scripts/4_inner_functions/class_family_print.sh" || return "$?"
-  source "./scripts/3_inner_constants/class_family.sh" || return "$?"
-  source "./scripts/3_inner_constants/class_symbols.sh" || return "$?"
+  source "./scripts/1_portable/package/install_command.sh" || return "$?"
+  source "./scripts/1_portable/messages.sh" || return "$?"
+  source "./scripts/2_inner/xpath/load_xml.sh" || return "$?"
+  source "./scripts/2_inner/xpath/get_nodes_count.sh" || return "$?"
+  source "./scripts/2_inner/xpath/get_node_attribute_value.sh" || return "$?"
+  source "./scripts/2_inner/xpath/get_node_with_attribute_value.sh" || return "$?"
+  source "./scripts/2_inner/class_family_calculate.sh" || return "$?"
+  source "./scripts/2_inner/class_family_print.sh" || return "$?"
   cd - >/dev/null || return "$?"
 
   # ========================================
   # 2. Arguments
   # ========================================
 
-  print_info "Automata Parser v.${SCRIPTS_VERSION}"
+  print_info "Automata Parser ${C_HIGHLIGHT}v.${SCRIPTS_VERSION}${C_RETURN}"
 
   local file_path="${1}" && shift
   if [ -z "${file_path}" ]; then
@@ -120,7 +118,6 @@ function automata_parser() {
 
     local arrow_id_in_list
     for ((arrow_id_in_list = 0; arrow_id_in_list < arrows_from_ellipse_count; arrow_id_in_list++)); do
-      local arrow_id="${arrow_ids["${arrow_id_in_list}"]}"
       local arrow_value="${arrow_values["${arrow_id_in_list}"]}"
 
       print_info "- Calculate data for arrow with value \"${arrow_value}\"!"
@@ -316,6 +313,7 @@ function automata_parser() {
   echo "================================================================================"
   echo "u0 = ${START_ARROW_TARGET_VALUE}"
 
+  echo ""
   echo -en "${header}"
 
   local result
@@ -345,6 +343,7 @@ function automata_parser() {
   # ----------------------------------------
   # Print K
   # ----------------------------------------
+  echo ""
   for ((class_family_id = 0; class_family_id < calculated_Ks; class_family_id++)); do
     echo -n "K${class_family_id} = "
     class_family_print "${class_family_id}" "${DO_PRINT_CLASS_FAMILY_ID}" || return "$?"
@@ -379,6 +378,7 @@ function automata_parser() {
     # ----------------------------------------
     # Print Smin
     # ----------------------------------------
+    echo ""
     echo -n "Smin = {"
 
     local is_first=1

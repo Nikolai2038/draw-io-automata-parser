@@ -4,14 +4,18 @@ if [ -n "${IS_FILE_SOURCED_LOAD_XML}" ]; then
   return
 fi
 
+export ATTRIBUTE_ID="id"
+export ATTRIBUTE_TARGET="target"
+export ATTRIBUTE_SOURCE="source"
+export ATTRIBUTE_VALUE="value"
+
 function load_xml() {
   # ========================================
   # 1. Imports
   # ========================================
 
   cd "$(dirname "${BASH_SOURCE[0]}")" || return "$?"
-  source "./../../2_external_functions/messages.sh" || return "$?"
-  source "./../../3_inner_constants/xpath/attributes.sh" || return "$?"
+  source "./../../1_portable/messages.sh" || return "$?"
   source "./get_node_attribute_value.sh" || return "$?"
   source "./get_node_with_attribute_value.sh" || return "$?"
   cd - >/dev/null || return "$?"

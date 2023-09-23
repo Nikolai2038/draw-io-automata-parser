@@ -10,9 +10,7 @@ function class_family_print() {
   # ========================================
 
   cd "$(dirname "${BASH_SOURCE[0]}")" || return "$?"
-  source "../2_external_functions/messages.sh" || return "$?"
-  source "../3_inner_constants/class_symbols.sh" || return "$?"
-  source "../3_inner_constants/class_family.sh" || return "$?"
+  source "../1_portable/messages.sh" || return "$?"
   cd - >/dev/null || return "$?"
 
   # ========================================

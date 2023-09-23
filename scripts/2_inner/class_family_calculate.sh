@@ -4,14 +4,19 @@ if [ -n "${IS_FILE_SOURCED_CLASS_FAMILY_CALCULATE}" ]; then
   return
 fi
 
+export CLASS_FAMILY_SYMBOL="K"
+declare -A K=()
+
+declare -a CLASS_SYMBOLS=("A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z")
+export CLASS_SYMBOLS_COUNT="${#CLASS_SYMBOLS[@]}"
+
 function class_family_calculate() {
   # ========================================
   # 1. Imports
   # ========================================
 
   cd "$(dirname "${BASH_SOURCE[0]}")" || return "$?"
-  source "../2_external_functions/messages.sh" || return "$?"
-  source "../3_inner_constants/class_symbols.sh" || return "$?"
+  source "../1_portable/messages.sh" || return "$?"
   cd - >/dev/null || return "$?"
 
   # ========================================

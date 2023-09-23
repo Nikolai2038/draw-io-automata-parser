@@ -1,16 +1,16 @@
 #!/bin/bash
 
-if [ -n "${IS_FILE_SOURCED_GET_NODE_ATTRIBUTE_VALUE}" ]; then
+if [ -n "${IS_FILE_SOURCED_GET_NODES_COUNT}" ]; then
   return
 fi
 
-function get_node_attribute_value() {
+function get_nodes_count() {
   # ========================================
   # 1. Imports
   # ========================================
 
   cd "$(dirname "${BASH_SOURCE[0]}")" || return "$?"
-  source "../../2_external_functions/messages.sh" || return "$?"
+  source "../../1_portable/messages.sh" || return "$?"
   cd - >/dev/null || return "$?"
 
   # ========================================
@@ -19,28 +19,22 @@ function get_node_attribute_value() {
 
   local xml="${1}" && shift
   if [ -z "${xml}" ]; then
-    echo ""
+    echo 0
     return 0
-  fi
-
-  local attribute_name="${1}" && shift
-  if [ -z "${attribute_name}" ]; then
-    print_error "You need to specify attribute name!"
-    return 1
   fi
 
   # ========================================
   # 3. Main code
   # ========================================
 
-  echo "<xml>${xml}</xml>" | xpath -q -e "(//mxCell)/@${attribute_name}" | sed -E "s/^ ${attribute_name}=\"([^\"]+)\"\$/\\1/" || return "$?"
+  echo "<xml>${xml}</xml>" | xpath -q -e "count(//mxCell)" || return "$?"
 
   return 0
 }
 
 # If script is not sourced - we execute it
 if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
-  get_node_attribute_value "$@" || exit "$?"
+  get_nodes_count "$@" || exit "$?"
 fi
 
-export IS_FILE_SOURCED_GET_NODE_ATTRIBUTE_VALUE=1
+export IS_FILE_SOURCED_GET_NODES_COUNT=1
