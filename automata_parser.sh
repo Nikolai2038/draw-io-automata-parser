@@ -8,6 +8,8 @@ ARRAY_INDEX_SEPARATOR="___"
 TABLE_BEFORE_CELL_VALUE="   "
 TABLE_AFTER_CELL_VALUE="   "
 TABLE_EMPTY_CELL="?"
+LAMBDA="L"
+DELTA="D"
 
 declare -a ALPHABET=("A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z")
 ALPHABET_SIZE="${#ALPHABET[@]}"
@@ -319,8 +321,9 @@ function automata_parser() {
   # done
 
   declare -a variables_names=()
-  declare -A lambda=()
-  declare -A delta=()
+
+  # Format for element: `cells["<column header 1 name><separator><column header 2 name><separator><row header name>"]="<cell value>"`
+  declare -A cells=()
 
   for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
     local ellipse_id="${ellipses_ids["${ellipse_id_in_list}"]}"
@@ -402,14 +405,14 @@ function automata_parser() {
         variables_names+=("${arrow_variable_name}")
       fi
 
-      local current_lambda="${lambda["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}"]}"
+      local current_lambda="${cells["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
       if [ -n "${current_lambda}" ]; then
         echo "From ellipse (id \"${ellipse_id}\", value \"${ellipse_value}\") there are more than one arrows with variable name \"${arrow_variable_name}\"!" >&2
         return 1
       fi
 
-      lambda["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}"]="${arrow_variable_value}"
-      delta["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}"]="${arrow_target_value}"
+      cells["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${arrow_variable_value}"
+      cells["${DELTA}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${arrow_target_value}"
     done
   done
 
@@ -424,6 +427,48 @@ function automata_parser() {
   # echo "variables_names_count: $variables_names_count"
 
   # ----------------------------------------
+  # Prepare for K calculations
+  # ----------------------------------------
+  declare -A lines_to_find_K=()
+
+  for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
+    local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
+
+    lines_to_find_K["0"]+="${ellipse_value}"
+
+    # Make sure to not add extra line because we count them in calculate_K function
+    if ((ellipse_id_in_list != ellipses_count - 1)); then
+      lines_to_find_K["0"]+="
+"
+    fi
+
+    for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
+      local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
+      local current_lambda="${cells["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
+      lines_to_find_K["1"]+=" ${current_lambda:-"${TABLE_EMPTY_CELL}"}"
+    done
+
+    # Make sure to not add extra line because we count them in calculate_K function
+    if ((ellipse_id_in_list != ellipses_count - 1)); then
+      lines_to_find_K["1"]+="
+"
+    fi
+
+    result+="\n"
+  done
+  # ----------------------------------------
+
+  # ----------------------------------------
+  # Calculate K
+  # ----------------------------------------
+  local K_id
+  for ((K_id = 0; K_id < 2; K_id++)); do
+    echo "Calculate K${K_id}..."
+    calculate_K "${lines_to_find_K["${K_id}"]}" "${K_id}" || return "$?"
+  done
+  # ----------------------------------------
+
+  # ----------------------------------------
   # Creating table's headers
   # ----------------------------------------
   local table_header_lambda=""
@@ -432,8 +477,8 @@ function automata_parser() {
 
   local variable_name_id_in_list
   for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
-    table_header_lambda+="${TABLE_BEFORE_CELL_VALUE}L${TABLE_AFTER_CELL_VALUE}|"
-    table_header_delta+="${TABLE_BEFORE_CELL_VALUE}D${TABLE_AFTER_CELL_VALUE}|"
+    table_header_lambda+="${TABLE_BEFORE_CELL_VALUE}${LAMBDA}${TABLE_AFTER_CELL_VALUE}|"
+    table_header_delta+="${TABLE_BEFORE_CELL_VALUE}${DELTA}${TABLE_AFTER_CELL_VALUE}|"
 
     local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
     table_header_variables+="${TABLE_BEFORE_CELL_VALUE}${variable_name_in_list}${TABLE_AFTER_CELL_VALUE}|"
@@ -446,54 +491,6 @@ function automata_parser() {
   header+="|${TABLE_BEFORE_CELL_VALUE} ${TABLE_AFTER_CELL_VALUE}|${table_header_variables}${table_header_variables}"
   # ----------------------------------------
 
-  # ----------------------------------------
-  # Creating table's contents
-  # ----------------------------------------
-  # Result will be printed separately because we will sort it (to sort ellipses values)
-  local result=""
-
-  declare -A lines_to_find_K=()
-
-  for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
-    local ellipse_id="${ellipses_ids["${ellipse_id_in_list}"]}"
-    local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
-
-    result+="|${TABLE_BEFORE_CELL_VALUE}${ellipse_value}${TABLE_AFTER_CELL_VALUE}|"
-
-    lines_to_find_K["0"]+="${ellipse_value}"
-
-    # Make sure to not add extra line because we count them in calculate_K function
-    if ((ellipse_id_in_list != ellipses_count - 1)); then
-      lines_to_find_K["0"]+="
-"
-    fi
-
-    for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
-      local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
-
-      local current_lambda="${lambda["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}"]}"
-      result+="${TABLE_BEFORE_CELL_VALUE}${current_lambda:-"${TABLE_EMPTY_CELL}"}${TABLE_AFTER_CELL_VALUE}|"
-
-      lines_to_find_K["1"]+=" ${current_lambda:-"${TABLE_EMPTY_CELL}"}"
-    done
-
-    # Make sure to not add extra line because we count them in calculate_K function
-    if ((ellipse_id_in_list != ellipses_count - 1)); then
-      lines_to_find_K["1"]+="
-"
-    fi
-
-    for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
-      local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
-
-      local current_delta="${delta["${ellipse_id}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}"]}"
-      result+="${TABLE_BEFORE_CELL_VALUE}${current_delta:-"${TABLE_EMPTY_CELL}"}${TABLE_AFTER_CELL_VALUE}|"
-    done
-
-    result+="\n"
-  done
-  # ----------------------------------------
-
   echo ""
   echo "================================================================================"
   echo "Result:"
@@ -502,20 +499,36 @@ function automata_parser() {
 
   echo ""
   echo -en "${header}"
+
+  local result
+
+  for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
+    local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
+
+    result+="|${TABLE_BEFORE_CELL_VALUE}${ellipse_value}${TABLE_AFTER_CELL_VALUE}"
+
+    for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
+      local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
+      local current_lambda="${cells["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
+      result+="|${TABLE_BEFORE_CELL_VALUE}${current_lambda:-"${TABLE_EMPTY_CELL}"}${TABLE_AFTER_CELL_VALUE}"
+    done
+
+    for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
+      local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
+      local current_delta="${cells["${DELTA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
+      result+="|${TABLE_BEFORE_CELL_VALUE}${current_delta:-"${TABLE_EMPTY_CELL}"}${TABLE_AFTER_CELL_VALUE}"
+    done
+
+    result+="|\n"
+  done
+
   echo -e "${result}" | sort --unique
 
+  # ----------------------------------------
+  # Print K
+  # ----------------------------------------
   echo ""
-  local K_id
   for ((K_id = 0; K_id < 2; K_id++)); do
-    # Calculate K
-    calculate_K "${lines_to_find_K["${K_id}"]}" "${K_id}" || return "$?"
-
-    # DEBUG:
-    # declare -p K
-
-    # ----------------------------------------
-    # Print K
-    # ----------------------------------------
     echo -n "K${K_id} = {"
 
     local is_first=1
@@ -541,8 +554,8 @@ function automata_parser() {
       echo -n " ${symbol}${K_id}={${K_value_pretty}}"
     done
     echo " }"
-    # ----------------------------------------
   done
+  # ----------------------------------------
   echo "================================================================================"
   echo ""
 
