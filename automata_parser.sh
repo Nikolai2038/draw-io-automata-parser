@@ -106,7 +106,11 @@ function calculate_K() {
       fi
     fi
 
-    K["${symbol}"]+=" $((line_id + 1))"
+    if [ -n "${K["${symbol}"]}" ]; then
+      K["${symbol}"]+=" "
+    fi
+
+    K["${symbol}"]+="$((line_id + 1))"
 
     # DEBUG:
     # echo "${symbol}: $((line_id + 1))"
@@ -231,8 +235,17 @@ function automata_parser() {
   fi
   echo "Start arrow found!" >&2
 
+  # Find first ellipsis id
+  local start_arrow_target_id
+  start_arrow_target_id="$(get_node_attribute_value "${start_arrow}" "${ATTRIBUTE_TARGET}")" || return "$?"
+
+  # Find first ellipsis node
   local start_arrow_target
-  start_arrow_target="$(get_node_attribute_value "${start_arrow}" "${ATTRIBUTE_TARGET}")" || return "$?"
+  start_arrow_target="$(get_node_with_attribute_value "${ellipses}" "${ATTRIBUTE_ID}" "${start_arrow_target_id}")" || return "$?"
+
+  # Find first ellipsis value
+  local start_arrow_target_value
+  start_arrow_target_value="$(get_node_attribute_value "${start_arrow_target}" "${ATTRIBUTE_VALUE}")" || return "$?"
   # ----------------------------------------
 
   # ----------------------------------------
@@ -481,9 +494,17 @@ function automata_parser() {
   done
   # ----------------------------------------
 
+  echo ""
+  echo "================================================================================"
+  echo "Result:"
+  echo "================================================================================"
+  echo "u0 = ${start_arrow_target_value}"
+
+  echo ""
   echo -en "${header}"
   echo -e "${result}" | sort --unique
 
+  echo ""
   local K_id
   for ((K_id = 0; K_id < 2; K_id++)); do
     # Calculate K
@@ -497,6 +518,8 @@ function automata_parser() {
     # ----------------------------------------
     echo -n "K${K_id} = {"
 
+    local is_first=1
+
     local symbol_id
     for ((symbol_id = 0; symbol_id < ALPHABET_SIZE; symbol_id++)); do
       local symbol="${ALPHABET["${symbol_id}"]}"
@@ -506,17 +529,22 @@ function automata_parser() {
         continue
       fi
 
-      echo -n " {${K_value} }"
+      if ((is_first)); then
+        is_first=0
+      else
+        echo -n ","
+      fi
 
-      # echo -n "K${K_number}: { "
-      # for key in "${!K[@]}"; do
-      #   echo -n "{${K["${key}"]} }, "
-      # done
-      # echo "}"
+      local K_value_pretty
+      K_value_pretty="$(echo "${K_value}" | sed -E 's/ /,/g')" || return "$?"
+
+      echo -n " ${symbol}${K_id}={${K_value_pretty}}"
     done
     echo " }"
     # ----------------------------------------
   done
+  echo "================================================================================"
+  echo ""
 
   echo "Parsing file \"${filePath}\": done!" >&2
   return 0
