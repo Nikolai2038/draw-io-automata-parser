@@ -12,5 +12,5 @@ Scripts for working with automata represented by diagrams in files `*.drawio`.
 2. Run main script:
 
     ```bash
-    ./automata-parser.sh
+    ./automata_parser.sh
     ```

@@ -25,7 +25,12 @@ function template() {
   # 4. Main code
   # ========================================
 
-  # TODO: Main code
+  # TODO: Function's main code
 
   return 0
 }
+
+# If script is not sourced - we execute it
+if [ "${0}" = "${BASH_SOURCE[0]}" ]; then
+  template "$@" || exit "$?"
+fi

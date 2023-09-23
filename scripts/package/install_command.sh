@@ -19,13 +19,13 @@ function install_command() {
   # 3. Arguments
   # ========================================
 
-  local commandName="$1"
+  local commandName="${1}"
   if [ -z "${commandName}" ]; then
     echo "You need to enter command name!" >&2
     return 1
   fi
 
-  local packageName="$2"
+  local packageName="${2}"
 
   # ========================================
   # 4. Main code
@@ -48,3 +48,8 @@ function install_command() {
 
   return 0
 }
+
+# If script is not sourced - we execute it
+if [ "${0}" = "${BASH_SOURCE[0]}" ]; then
+  install_command "$@" || exit "$?"
+fi

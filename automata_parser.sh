@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Start main script of Automata Parser
-function main() {
+function automata_parser() {
   # ========================================
   # 1. Working directory
   # ========================================
@@ -25,6 +25,9 @@ function main() {
   # 4. Main code
   # ========================================
 
+  local version="0.1.0"
+  echo "Automata Parser v.${version}" >&2
+
   install_command "curl" || return "$?"
 
   # TODO: Main code
@@ -32,4 +35,7 @@ function main() {
   return 0
 }
 
-main "$@" || exit "$?"
+# If script is not sourced - we execute it
+if [ "${0}" = "${BASH_SOURCE[0]}" ]; then
+  automata_parser "$@" || exit "$?"
+fi
