@@ -10,6 +10,7 @@ TABLE_AFTER_CELL_VALUE="   "
 TABLE_EMPTY_CELL="?"
 LAMBDA="L"
 DELTA="D"
+CALCULATE_K_ITERATION_LIMIT=50
 
 declare -a ALPHABET=("A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z")
 ALPHABET_SIZE="${#ALPHABET[@]}"
@@ -76,9 +77,9 @@ function calculate_K() {
     return 1
   fi
 
-  local K_number="${1}" && shift
-  if [ -z "${K_number}" ]; then
-    echo "You need to specify K number!" >&2
+  local K_id="${1}" && shift
+  if [ -z "${K_id}" ]; then
+    echo "You need to specify K id!" >&2
     return 1
   fi
 
@@ -99,7 +100,7 @@ function calculate_K() {
 
     local symbol="${line_to_symbol["${line}"]}"
     if [ -z "${symbol}" ]; then
-      line_to_symbol["${line}"]="${ALPHABET["${free_symbol_id}"]}${K_number}"
+      line_to_symbol["${line}"]="${ALPHABET["${free_symbol_id}"]}${K_id}"
       symbol="${line_to_symbol["${line}"]}"
       ((free_symbol_id++))
       if ((free_symbol_id >= ALPHABET_SIZE)); then
@@ -120,6 +121,43 @@ function calculate_K() {
 
   # DEBUG:
   # declare -p K
+
+  return 0
+}
+
+function print_K() {
+  local K_id="${1}" && shift
+  if [ -z "${K_id}" ]; then
+    echo "You need to specify K id!" >&2
+    return 1
+  fi
+
+  echo -n "{"
+
+  local is_first=1
+
+  local symbol_id
+  for ((symbol_id = 0; symbol_id < ALPHABET_SIZE; symbol_id++)); do
+    local symbol="${ALPHABET["${symbol_id}"]}"
+    local K_value="${K["${symbol}${K_id}"]}"
+
+    if [ -z "${K_value}" ]; then
+      continue
+    fi
+
+    if ((is_first)); then
+      is_first=0
+    else
+      echo -n ","
+    fi
+
+    local K_value_pretty
+    K_value_pretty="$(echo "${K_value}" | sed -E 's/ /,/g')" || return "$?"
+
+    echo -n " ${symbol}${K_id}={${K_value_pretty}}"
+  done
+
+  echo " }"
 
   return 0
 }
@@ -328,6 +366,7 @@ function automata_parser() {
   for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
     local ellipse_id="${ellipses_ids["${ellipse_id_in_list}"]}"
     local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
+    echo "Calcullate data for ellipse (id \"${ellipse_id}\", value \"${ellipse_value}\")!" >&2
 
     local arrows_from_ellipse
     arrows_from_ellipse="$(get_node_with_attribute_value "${connected_arrows}" "${ATTRIBUTE_SOURCE}" "${ellipse_id}")" || return "$?"
@@ -363,6 +402,9 @@ function automata_parser() {
     for ((arrow_id_in_list = 0; arrow_id_in_list < arrows_from_ellipse_count; arrow_id_in_list++)); do
       local arrow_id="${arrow_ids["${arrow_id_in_list}"]}"
       local arrow_value="${arrow_values["${arrow_id_in_list}"]}"
+
+      echo "  Calcullate data for arrow (id \"${arrow_id}\", value \"${arrow_value}\")!" >&2
+
       local arrow_target_id="${arrow_targets["${arrow_id_in_list}"]}"
       local arrow_target_node
       arrow_target_node="$(get_node_with_attribute_value "${ellipses}" "${ATTRIBUTE_ID}" "${arrow_target_id}")" || return "$?"
@@ -461,10 +503,57 @@ function automata_parser() {
   # ----------------------------------------
   # Calculate K
   # ----------------------------------------
-  local K_id
-  for ((K_id = 0; K_id < 2; K_id++)); do
+  # Initialization values must be different here
+  local prev_K="0"
+  local current_K="1"
+  local K_id=0
+
+  while [[ "${current_K}" != "${prev_K}" ]] && ((K_id < CALCULATE_K_ITERATION_LIMIT)); do
     echo "Calculate K${K_id}..."
     calculate_K "${lines_to_find_K["${K_id}"]}" "${K_id}" || return "$?"
+
+    prev_K="${current_K}"
+    current_K="$(print_K "${K_id}")" || return "$?"
+
+    ((K_id++))
+  done
+
+  if ((K_id >= CALCULATE_K_ITERATION_LIMIT)); then
+    echo "Calculate K iteration limit (${K_id}/${CALCULATE_K_ITERATION_LIMIT} iterations) was reached! If there are huge automate and you think this is a mistake, increase \"CALCULATE_K_ITERATION_LIMIT\" variable." >&2
+    return 1
+  fi
+  # ----------------------------------------
+
+  # ----------------------------------------
+  # Prepare for K calculations
+  # ----------------------------------------
+  for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
+    local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
+
+    lines_to_find_K["0"]+="${ellipse_value}"
+
+    # Make sure to not add extra line because we count them in calculate_K function
+    if ((ellipse_id_in_list != ellipses_count - 1)); then
+      lines_to_find_K["0"]+="
+"
+    fi
+
+    for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
+      local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
+      local current_lambda="${cells["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
+      lines_to_find_K["1"]+=" ${current_lambda:-"${TABLE_EMPTY_CELL}"}"
+
+      cells["K${K_id}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${arrow_variable_value}"
+
+    done
+
+    # Make sure to not add extra line because we count them in calculate_K function
+    if ((ellipse_id_in_list != ellipses_count - 1)); then
+      lines_to_find_K["1"]+="
+"
+    fi
+
+    result+="\n"
   done
   # ----------------------------------------
 
@@ -529,31 +618,8 @@ function automata_parser() {
   # ----------------------------------------
   echo ""
   for ((K_id = 0; K_id < 2; K_id++)); do
-    echo -n "K${K_id} = {"
-
-    local is_first=1
-
-    local symbol_id
-    for ((symbol_id = 0; symbol_id < ALPHABET_SIZE; symbol_id++)); do
-      local symbol="${ALPHABET["${symbol_id}"]}"
-      local K_value="${K["${symbol}${K_id}"]}"
-
-      if [ -z "${K_value}" ]; then
-        continue
-      fi
-
-      if ((is_first)); then
-        is_first=0
-      else
-        echo -n ","
-      fi
-
-      local K_value_pretty
-      K_value_pretty="$(echo "${K_value}" | sed -E 's/ /,/g')" || return "$?"
-
-      echo -n " ${symbol}${K_id}={${K_value_pretty}}"
-    done
-    echo " }"
+    echo -n "K${K_id} = "
+    print_K "${K_id}" || return "$?"
   done
   # ----------------------------------------
   echo "================================================================================"
