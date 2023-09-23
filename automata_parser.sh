@@ -1,192 +1,19 @@
 #!/bin/bash
 
-ATTRIBUTE_ID="id"
-ATTRIBUTE_TARGET="target"
-ATTRIBUTE_SOURCE="source"
-ATTRIBUTE_VALUE="value"
+SCRIPTS_VERSION="0.1.0"
+
 ARRAY_INDEX_SEPARATOR="___"
 TABLE_BEFORE_CELL_VALUE="   "
 TABLE_AFTER_CELL_VALUE="   "
 TABLE_EMPTY_CELL="?"
 LAMBDA="L"
 DELTA="D"
-CALCULATE_K_ITERATION_LIMIT=5
+CALCULATE_K_ITERATION_LIMIT=50
 
-DO_NOT_PRINT_K_ID=0
-PRINT_K_ID=1
+DO_NOT_PRINT_CLASS_FAMILY_ID=0
+DO_PRINT_CLASS_FAMILY_ID=1
 
-declare -a ALPHABET=("A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z")
-ALPHABET_SIZE="${#ALPHABET[@]}"
 declare -A K=()
-
-function get_nodes_count() {
-  local xml="${1}" && shift
-  if [ -z "${xml}" ]; then
-    echo 0
-    return 0
-  fi
-
-  echo "<xml>${xml}</xml>" | xpath -q -e "count(//mxCell)" || return "$?"
-
-  return 0
-}
-
-function get_node_attribute_value() {
-  local xml="${1}" && shift
-  if [ -z "${xml}" ]; then
-    echo ""
-    return 0
-  fi
-
-  local attribute_name="${1}" && shift
-  if [ -z "${attribute_name}" ]; then
-    echo "You need to specify attribute name!" >&2
-    return 1
-  fi
-
-  echo "<xml>${xml}</xml>" | xpath -q -e "(//mxCell)/@${attribute_name}" | sed -E "s/^ ${attribute_name}=\"([^\"]+)\"\$/\\1/" || return "$?"
-
-  return 0
-}
-
-function get_node_with_attribute_value() {
-  local xml="${1}" && shift
-  if [ -z "${xml}" ]; then
-    echo ""
-    return 0
-  fi
-
-  local attribute_name="${1}" && shift
-  if [ -z "${attribute_name}" ]; then
-    echo "You need to specify attribute name!" >&2
-    return 1
-  fi
-
-  local attribute_value="${1}" && shift
-  if [ -z "${attribute_value}" ]; then
-    echo "You need to specify attribute value!" >&2
-    return 1
-  fi
-
-  echo "<xml>${xml}</xml>" | xpath -q -e "(//mxCell[@${attribute_name}=\"${attribute_value}\"]" || return "$?"
-
-  return 0
-}
-
-function calculate_K() {
-  local ellipses_values_as_string="${1}" && shift
-  if [ -z "${ellipses_values_as_string}" ]; then
-    echo "You need to specify ellipses values as string!" >&2
-    return 1
-  fi
-
-  local lines_as_string="${1}" && shift
-  if [ -z "${lines_as_string}" ]; then
-    echo "You need to specify lines as string!" >&2
-    return 1
-  fi
-
-  local K_id="${1}" && shift
-  if [ -z "${K_id}" ]; then
-    echo "You need to specify K id!" >&2
-    return 1
-  fi
-
-  declare -a ellipses_values
-  mapfile -t ellipses_values <<< "${ellipses_values_as_string}" || return "$?"
-
-  declare -a lines
-  mapfile -t lines <<< "${lines_as_string}" || return "$?"
-
-  local lines_count="${#lines[@]}"
-
-  # DEBUG:
-  # echo "lines_count: $lines_count"
-
-  local free_symbol_id=0
-  declare -A line_to_symbol=()
-
-  local line_id
-  for ((line_id = 0; line_id < lines_count; line_id++)); do
-    local line="${lines["${line_id}"]}"
-
-    local symbol="${line_to_symbol["${line}"]}"
-    if [ -z "${symbol}" ]; then
-      line_to_symbol["${line}"]="${ALPHABET["${free_symbol_id}"]}${K_id}"
-      symbol="${line_to_symbol["${line}"]}"
-      ((free_symbol_id++))
-      if ((free_symbol_id >= ALPHABET_SIZE)); then
-        echo "Need to increase ALPHABET!" >&2
-        return 1
-      fi
-    fi
-
-    if [ -n "${K["${symbol}"]}" ]; then
-      K["${symbol}"]+=" "
-    fi
-
-    K["${symbol}"]+="${ellipses_values["${line_id}"]}"
-
-    # DEBUG:
-    # echo "${symbol}: $((line_id + 1))"
-  done
-
-  # DEBUG:
-  # declare -p K
-
-  return 0
-}
-
-function print_K() {
-  local K_id="${1}" && shift
-  if [ -z "${K_id}" ]; then
-    echo "You need to specify K id!" >&2
-    return 1
-  fi
-
-  local print_K_id="${1}" && shift
-  if [ -z "${K_id}" ]; then
-    echo "You need to specify print or do not print K_id!" >&2
-    return 1
-  fi
-
-  echo -n "{"
-
-  local is_first=1
-
-  local symbol_id
-  for ((symbol_id = 0; symbol_id < ALPHABET_SIZE; symbol_id++)); do
-    local symbol="${ALPHABET["${symbol_id}"]}"
-    local class_name="${symbol}${K_id}"
-
-    local K_value="${K["${class_name}"]}"
-
-    if [ -z "${K_value}" ]; then
-      continue
-    fi
-
-    if ((is_first)); then
-      is_first=0
-    else
-      echo -n ","
-    fi
-
-    echo -n " ${symbol}"
-
-    local K_value_pretty
-    K_value_pretty="$(echo "${K_value}" | sed -E 's/ /,/g')" || return "$?"
-
-    if ((print_K_id)); then
-      echo -n "${K_id}={${K_value_pretty}}"
-    else
-      echo -n "={${K_value_pretty}}"
-    fi
-  done
-
-  echo " }"
-
-  return 0
-}
 
 # Start main script of Automata Parser
 function automata_parser() {
@@ -194,22 +21,26 @@ function automata_parser() {
   # 1. Imports
   # ========================================
 
-  local directory_with_script
-  directory_with_script="$(dirname "${BASH_SOURCE[0]}")" || return "$?"
-
-  # shellcheck source=./scripts/package/install_command.sh
-  source "${directory_with_script}/scripts/package/install_command.sh" || return "$?"
+  cd "$(dirname "${BASH_SOURCE[0]}")" || return "$?"
+  source "./scripts/2_external_functions/package/install_command.sh" || return "$?"
+  source "./scripts/2_external_functions/messages.sh" || return "$?"
+  source "./scripts/4_inner_functions/xpath/load_xml.sh" || return "$?"
+  source "./scripts/4_inner_functions/xpath/get_nodes_count.sh" || return "$?"
+  source "./scripts/4_inner_functions/xpath/get_node_attribute_value.sh" || return "$?"
+  source "./scripts/4_inner_functions/xpath/get_node_with_attribute_value.sh" || return "$?"
+  source "./scripts/4_inner_functions/class_family_calculate.sh" || return "$?"
+  source "./scripts/4_inner_functions/class_family_print.sh" || return "$?"
+  cd - >/dev/null || return "$?"
 
   # ========================================
   # 2. Arguments
   # ========================================
 
-  local version="0.1.0"
-  echo "Automata Parser v.${version}" >&2
+  print_info "Automata Parser v.${SCRIPTS_VERSION}"
 
-  local filePath="${1}" && shift
-  if [ -z "${filePath}" ]; then
-    echo "You need to specify file path!" >&2
+  local file_path="${1}" && shift
+  if [ -z "${file_path}" ]; then
+    print_error "You need to specify file path!"
     return 1
   fi
 
@@ -217,165 +48,19 @@ function automata_parser() {
   # 3. Main code
   # ========================================
 
-  echo "Parsing file \"${filePath}\"..." >&2
+  load_xml "${file_path}" || return "$?"
 
-  local file_content
-  file_content="$(cat "${filePath}")" || return "$?"
-
-  # ----------------------------------------
-  # Elements
-  # ----------------------------------------
-  local elements
-  elements="$(echo "${file_content}" | xpath -q -e "
-    //mxCell
-  ")" || return "$?"
-  local elements_count
-  elements_count="$(get_nodes_count "${elements}")" || return "$?"
-
-  if ((elements_count < 1)); then
-    echo "No elements found!" >&2
-    return 1
-  fi
-  echo "Found ${elements_count} elements!" >&2
-  # ----------------------------------------
-
-  # ----------------------------------------
-  # Elipses
-  # ----------------------------------------
-  local ellipses
-  ellipses="$(echo "<xml>${elements}</xml>" | xpath -q -e "
-    //mxCell[
-      starts-with(@style, \"ellipse;\")
-    ]
-  ")" || return "$?"
-  local ellipses_count
-  ellipses_count="$(get_nodes_count "${ellipses}")" || return "$?"
-
-  if ((ellipses_count < 1)); then
-    echo "No ellipses found!" >&2
-    return 1
-  fi
-  echo "Found ${ellipses_count} ellipses!" >&2
-  # ----------------------------------------
-
-  # ----------------------------------------
-  # Arrows
-  # ----------------------------------------
-  local arrows
-  arrows="$(echo "<xml>${elements}</xml>" | xpath -q -e "
-    //mxCell[
-      starts-with(@style, \"edgeStyle\")
-    ]
-  ")" || return "$?"
-  local arrows_count
-  arrows_count="$(get_nodes_count "${arrows}")" || return "$?"
-
-  if ((arrows_count < 1)); then
-    echo "No arrows found!" >&2
-    return 1
-  fi
-  echo "Found ${arrows_count} arrows!" >&2
-  # ----------------------------------------
-
-  # ----------------------------------------
-  # Start arrow
-  # ----------------------------------------
-  local start_arrow
-  start_arrow="$(echo "<xml>${arrows}</xml>" | xpath -q -e "
-    //mxCell[
-      not(@source)
-      and
-      @target
-    ]
-  ")" || return "$?"
-  local start_arrow_count
-  start_arrow_count="$(get_nodes_count "${start_arrow}")" || return "$?"
-
-  if ((start_arrow_count < 1)); then
-    echo "No start arrow found! You need to create arrow with no source but connect it to some ellipse." >&2
-    return 1
-  elif ((start_arrow_count > 1)); then
-    echo "Only one start arrow is allowed! Found: ${start_arrow_count}. IDs:" >&2
-    get_node_attribute_value "${start_arrow}" "${ATTRIBUTE_ID}"
-    return 1
-  fi
-  echo "Start arrow found!" >&2
-
-  # Find first ellipsis id
-  local start_arrow_target_id
-  start_arrow_target_id="$(get_node_attribute_value "${start_arrow}" "${ATTRIBUTE_TARGET}")" || return "$?"
-
-  # Find first ellipsis node
-  local start_arrow_target
-  start_arrow_target="$(get_node_with_attribute_value "${ellipses}" "${ATTRIBUTE_ID}" "${start_arrow_target_id}")" || return "$?"
-
-  # Find first ellipsis value
-  local start_arrow_target_value
-  start_arrow_target_value="$(get_node_attribute_value "${start_arrow_target}" "${ATTRIBUTE_VALUE}")" || return "$?"
-  # ----------------------------------------
-
-  # ----------------------------------------
-  # Disconnected arrows
-  # ----------------------------------------
-  local disconnected_arrows
-  disconnected_arrows="$(echo "<xml>${arrows}</xml>" | xpath -q -e "
-    //mxCell[
-      (
-        @source
-        and
-        not(@target)
-      )
-      or
-      (
-        not(@source)
-        and
-        not(@target)
-      )
-    ]
-  ")" || return "$?"
-
-  if [ -n "${disconnected_arrows}" ]; then
-    local disconnected_arrows_count
-    disconnected_arrows_count="$(get_nodes_count "${disconnected_arrows}")" || return "$?"
-    if ((disconnected_arrows_count > 0)); then
-      echo "Found ${disconnected_arrows_count} disconnected arrows! IDs:" >&2
-      get_node_attribute_value "${disconnected_arrows}" "${ATTRIBUTE_ID}"
-      return 1
-    fi
-  fi
-  echo "No disconnected arrows found!" >&2
-  # ----------------------------------------
-
-  # ----------------------------------------
-  # Connected arrows
-  # ----------------------------------------
-  local connected_arrows
-  connected_arrows="$(echo "<xml>${arrows}</xml>" | xpath -q -e "
-    //mxCell[
-      @source
-      and
-      @target
-    ]
-  ")" || return "$?"
-  local connected_arrows_count
-  connected_arrows_count="$(get_nodes_count "${connected_arrows}")" || return "$?"
-
-  if ((connected_arrows_count < 1)); then
-    echo "No connected arrows found!" >&2
-    return 1
-  fi
-  echo "Found ${connected_arrows_count} connected arrows!" >&2
-  # ----------------------------------------
+  print_info "Parsing..."
 
   local ellipses_ids_string
-  ellipses_ids_string="$(get_node_attribute_value "${ellipses}" "${ATTRIBUTE_ID}")" || return "$?"
+  ellipses_ids_string="$(get_node_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_ID}")" || return "$?"
   declare -a ellipses_ids
-  mapfile -t ellipses_ids <<< "${ellipses_ids_string}" || return "$?"
+  mapfile -t ellipses_ids <<<"${ellipses_ids_string}" || return "$?"
 
   local ellipses_values_string
-  ellipses_values_string="$(get_node_attribute_value "${ellipses}" "${ATTRIBUTE_VALUE}")" || return "$?"
+  ellipses_values_string="$(get_node_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_VALUE}")" || return "$?"
   declare -a ellipses_values
-  mapfile -t ellipses_values <<< "${ellipses_values_string}" || return "$?"
+  mapfile -t ellipses_values <<<"${ellipses_values_string}" || return "$?"
 
   # TODO: Add this check later
   # declare -a ellipses_is_in_scheme=()
@@ -392,10 +77,10 @@ function automata_parser() {
   for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
     local ellipse_id="${ellipses_ids["${ellipse_id_in_list}"]}"
     local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
-    echo "Calcullate data for ellipse (id \"${ellipse_id}\", value \"${ellipse_value}\")!" >&2
+    print_info "Calculate data for ellipse with value \"${ellipse_value}\"!"
 
     local arrows_from_ellipse
-    arrows_from_ellipse="$(get_node_with_attribute_value "${connected_arrows}" "${ATTRIBUTE_SOURCE}" "${ellipse_id}")" || return "$?"
+    arrows_from_ellipse="$(get_node_with_attribute_value "${CONNECTED_ARROWS_XML}" "${ATTRIBUTE_SOURCE}" "${ellipse_id}")" || return "$?"
     local arrows_from_ellipse_count
     arrows_from_ellipse_count="$(get_nodes_count "${arrows_from_ellipse}")" || return "$?"
     if ((arrows_from_ellipse_count < 1)); then
@@ -409,7 +94,7 @@ function automata_parser() {
     local arrow_values_string
     arrow_values_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_VALUE}")"
     declare -a arrow_values
-    mapfile -t arrow_values <<< "${arrow_values_string}" || return "$?"
+    mapfile -t arrow_values <<<"${arrow_values_string}" || return "$?"
 
     # DEBUG:
     # echo "arrow_values_string: $arrow_values_string"
@@ -417,23 +102,23 @@ function automata_parser() {
     local arrow_ids_string
     arrow_ids_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_ID}")"
     declare -a arrow_ids
-    mapfile -t arrow_ids <<< "${arrow_ids_string}" || return "$?"
+    mapfile -t arrow_ids <<<"${arrow_ids_string}" || return "$?"
 
     local arrow_targets_string
     arrow_targets_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_TARGET}")"
     declare -a arrow_targets
-    mapfile -t arrow_targets <<< "${arrow_targets_string}" || return "$?"
+    mapfile -t arrow_targets <<<"${arrow_targets_string}" || return "$?"
 
     local arrow_id_in_list
     for ((arrow_id_in_list = 0; arrow_id_in_list < arrows_from_ellipse_count; arrow_id_in_list++)); do
       local arrow_id="${arrow_ids["${arrow_id_in_list}"]}"
       local arrow_value="${arrow_values["${arrow_id_in_list}"]}"
 
-      echo "  Calcullate data for arrow (id \"${arrow_id}\", value \"${arrow_value}\")!" >&2
+      print_info "- Calculate data for arrow with value \"${arrow_value}\"!"
 
       local arrow_target_id="${arrow_targets["${arrow_id_in_list}"]}"
       local arrow_target_node
-      arrow_target_node="$(get_node_with_attribute_value "${ellipses}" "${ATTRIBUTE_ID}" "${arrow_target_id}")" || return "$?"
+      arrow_target_node="$(get_node_with_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_ID}" "${arrow_target_id}")" || return "$?"
       local arrow_target_value
       arrow_target_value="$(get_node_attribute_value "${arrow_target_node}" "${ATTRIBUTE_VALUE}")" || return "$?"
 
@@ -451,7 +136,7 @@ function automata_parser() {
       arrow_variable_value="$(echo "${arrow_value}" | sed -En "s/${arrow_variable_regexpr}/\2/p")" || return "$?"
 
       if [ -z "${arrow_variable_name}" ] || [ -z "${arrow_variable_value}" ]; then
-        echo "Failed to get variable name and value from arrow (id \"${arrow_id}\", value \"${arrow_value}\") from ellipse (id \"${ellipse_id}\", value \"${ellipse_value}\")! You must add text to arrow in format \"<variable name>/<variable value>\"" >&2
+        print_error "Failed to get variable name and value from arrow with value \"${arrow_value}\" from ellipse with value \"${ellipse_value}\"! You must add text to arrow in format \"<variable name>/<variable value>\""
         return 1
       fi
 
@@ -460,7 +145,7 @@ function automata_parser() {
 
       local current_lambda="${cells["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
       if [ -n "${current_lambda}" ]; then
-        echo "From ellipse (id \"${ellipse_id}\", value \"${ellipse_value}\") there are more than one arrows with variable name \"${arrow_variable_name}\"!" >&2
+        print_error "From ellipse with value \"${ellipse_value}\" there are more than one arrows with variable name \"${arrow_variable_name}\"!"
         return 1
       fi
 
@@ -472,7 +157,7 @@ function automata_parser() {
   # Sort variables names
   local variables_names_string_sorted
   variables_names_string_sorted="$(echo "${variables_names[@]}" | tr ' ' '\n' | sort --unique)" || return "$?"
-  mapfile -t variables_names <<< "${variables_names_string_sorted}" || return "$?"
+  mapfile -t variables_names <<<"${variables_names_string_sorted}" || return "$?"
 
   local variables_names_count="${#variables_names[@]}"
 
@@ -491,7 +176,7 @@ function automata_parser() {
     lines_to_find_K["0"]+="${ellipse_value}"
     ellipses_values_as_string+="${ellipse_value}"
 
-    # Make sure to not add extra line because we count them in calculate_K function
+    # Make sure to not add extra line because we count them in class_family_calculate function
     if ((ellipse_id_in_list != ellipses_count - 1)); then
       lines_to_find_K["0"]+="
 "
@@ -505,13 +190,11 @@ function automata_parser() {
       lines_to_find_K["1"]+=" ${current_lambda:-"${TABLE_EMPTY_CELL}"}"
     done
 
-    # Make sure to not add extra line because we count them in calculate_K function
+    # Make sure to not add extra line because we count them in class_family_calculate function
     if ((ellipse_id_in_list != ellipses_count - 1)); then
       lines_to_find_K["1"]+="
 "
     fi
-
-    result+="\n"
   done
 
   # DEBUG:
@@ -524,13 +207,13 @@ function automata_parser() {
   # Initialization values must be different here
   local prev_K="0"
   local current_K="1"
-  local K_id=0
+  local familyOfClassesId=0
   local calculated_Ks=0
 
-  while [[ "${current_K}" != "${prev_K}" ]] && ((K_id < CALCULATE_K_ITERATION_LIMIT)); do
+  while [[ "${current_K}" != "${prev_K}" ]] && ((familyOfClassesId < CALCULATE_K_ITERATION_LIMIT)); do
     # For Ks greater than 1 we need to calculate lines_to_find_K based on previous K
-    if ((K_id > 1)); then
-      local K_id_prev="$((K_id - 1))"
+    if ((familyOfClassesId > 1)); then
+      local familyOfClassesId_prev="$((familyOfClassesId - 1))"
 
       for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
         local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
@@ -543,8 +226,8 @@ function automata_parser() {
           local K_cell_value=""
 
           local symbol_id
-          for ((symbol_id = 0; symbol_id < ALPHABET_SIZE; symbol_id++)); do
-            local class_name="${ALPHABET["${symbol_id}"]}${K_id_prev}"
+          for ((symbol_id = 0; symbol_id < CLASS_SYMBOLS_COUNT; symbol_id++)); do
+            local class_name="${CLASS_SYMBOLS["${symbol_id}"]}${familyOfClassesId_prev}"
             local K_value="${K["${class_name}"]}"
 
             if [ -z "${K_value}" ]; then
@@ -559,46 +242,44 @@ function automata_parser() {
           done
 
           if [[ -z "${K_cell_value}" ]]; then
-            echo "Calculation for K cell value failed!" >&2
+            print_error "Calculation for K cell value failed!"
             return 1
           fi
 
           # DEBUG:
           # echo "current_delta: ${current_delta}; ellipse_value: ${ellipse_value}; variable_name_in_list: ${variable_name_in_list}; K_cell_value: ${K_cell_value}"
 
-          cells["K${K_id_prev}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${K_cell_value}"
+          cells["K${familyOfClassesId_prev}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${K_cell_value}"
 
-          lines_to_find_K["${K_id}"]+=" ${K_cell_value:-"${TABLE_EMPTY_CELL}"}"
+          lines_to_find_K["${familyOfClassesId}"]+=" ${K_cell_value:-"${TABLE_EMPTY_CELL}"}"
         done
 
-        # Make sure to not add extra line because we count them in calculate_K function
+        # Make sure to not add extra line because we count them in class_family_calculate function
         if ((ellipse_id_in_list != ellipses_count - 1)); then
-          lines_to_find_K["${K_id}"]+="
+          lines_to_find_K["${familyOfClassesId}"]+="
 "
         fi
-
-        result+="\n"
       done
     fi
 
-    echo "Calculate K${K_id}..."
+    print_info "Calculate K${familyOfClassesId}..."
 
-    calculate_K "${ellipses_values_as_string}" "${lines_to_find_K["${K_id}"]}" "${K_id}" || return "$?"
+    class_family_calculate "${ellipses_values_as_string}" "${lines_to_find_K["${familyOfClassesId}"]}" "${familyOfClassesId}" || return "$?"
     ((calculated_Ks++))
 
     prev_K="${current_K}"
-    current_K="$(print_K "${K_id}" "${DO_NOT_PRINT_K_ID}")" || return "$?"
+    current_K="$(class_family_print "${familyOfClassesId}" "${DO_NOT_PRINT_CLASS_FAMILY_ID}")" || return "$?"
 
     # DEBUG:
-    echo "prev_K: ${prev_K}"
-    echo "current_K: ${current_K}"
+    # echo "prev_K: ${prev_K}"
+    # echo "current_K: ${current_K}"
 
-    ((K_id++))
+    ((familyOfClassesId++))
   done
 
   local was_error=0
-  if ((K_id >= CALCULATE_K_ITERATION_LIMIT)); then
-    echo "Calculate K iteration limit (${K_id}/${CALCULATE_K_ITERATION_LIMIT} iterations) was reached! If there are huge automate and you think this is a mistake, increase \"CALCULATE_K_ITERATION_LIMIT\" variable." >&2
+  if ((familyOfClassesId >= CALCULATE_K_ITERATION_LIMIT)); then
+    print_error "Calculate K iteration limit (${familyOfClassesId}/${CALCULATE_K_ITERATION_LIMIT} iterations) was reached! If there are huge automate and you think this is a mistake, increase \"CALCULATE_K_ITERATION_LIMIT\" variable."
     was_error=1
   fi
   # ----------------------------------------
@@ -626,13 +307,11 @@ function automata_parser() {
   header+="|${TABLE_BEFORE_CELL_VALUE} ${TABLE_AFTER_CELL_VALUE}|${table_header_variables}${table_header_variables}"
   # ----------------------------------------
 
-  echo ""
   echo "================================================================================"
   echo "Result:"
   echo "================================================================================"
-  echo "u0 = ${start_arrow_target_value}"
+  echo "u0 = ${START_ARROW_TARGET_VALUE}"
 
-  echo ""
   echo -en "${header}"
 
   local result
@@ -662,25 +341,23 @@ function automata_parser() {
   # ----------------------------------------
   # Print K
   # ----------------------------------------
-  echo ""
-  for ((K_id = 0; K_id < calculated_Ks; K_id++)); do
-    echo -n "K${K_id} = "
-    print_K "${K_id}" "${PRINT_K_ID}" || return "$?"
+  for ((familyOfClassesId = 0; familyOfClassesId < calculated_Ks; familyOfClassesId++)); do
+    echo -n "K${familyOfClassesId} = "
+    class_family_print "${familyOfClassesId}" "${DO_PRINT_CLASS_FAMILY_ID}" || return "$?"
   done
   # ----------------------------------------
 
-  echo ""
   if ((!was_error)); then
-    local last_calculated_K_id="$((calculated_Ks - 1))"
+    local last_calculated_familyOfClassesId="$((calculated_Ks - 1))"
 
-    echo "K${last_calculated_K_id} == K$((last_calculated_K_id - 1)) == K"
+    echo "K${last_calculated_familyOfClassesId} == K$((last_calculated_familyOfClassesId - 1)) == K"
 
     declare -a last_calculated_K_symbols=()
 
     local symbol_id
-    for ((symbol_id = 0; symbol_id < ALPHABET_SIZE; symbol_id++)); do
-      local symbol="${ALPHABET["${symbol_id}"]}"
-      local class_name="${symbol}${last_calculated_K_id}"
+    for ((symbol_id = 0; symbol_id < CLASS_SYMBOLS_COUNT; symbol_id++)); do
+      local symbol="${CLASS_SYMBOLS["${symbol_id}"]}"
+      local class_name="${symbol}${last_calculated_familyOfClassesId}"
       local K_value="${K["${class_name}"]}"
 
       if [ -z "${K_value}" ]; then
@@ -691,7 +368,7 @@ function automata_parser() {
     done
 
     if [[ -z "${K_cell_value}" ]]; then
-      echo "Calculation for K cell value failed!" >&2
+      print_error "Calculation for K cell value failed!"
       return 1
     fi
 
@@ -719,23 +396,30 @@ function automata_parser() {
     # ----------------------------------------
 
     # TODO: Calculate u0min
-    echo -n "u0min = ..."
+    echo "u0min = ..."
 
     # TODO: Calculate result table
     # ...
 
     # TODO: Insert K columns in first table
     # ...
+
+    # TODO: Add check on infinite K calculating when they switch each other
+    # ...
   fi
 
   echo "================================================================================"
-  echo ""
 
-  echo "Parsing file \"${filePath}\": done!" >&2
+  if ((was_error)); then
+    print_error "Parsing: failed!"
+  else
+    print_success "Parsing: done!"
+  fi
+
   return "${was_error}"
 }
 
 # If script is not sourced - we execute it
-if [ "${0}" = "${BASH_SOURCE[0]}" ]; then
+if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
   automata_parser "$@" || exit "$?"
 fi
