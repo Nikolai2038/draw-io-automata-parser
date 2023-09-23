@@ -3,32 +3,29 @@
 # Install command with specified name
 function install_command() {
   # ========================================
-  # 1. Working directory
+  # 1. Imports
   # ========================================
 
-  # We will work in this script's directory
-  cd "$(dirname "${BASH_SOURCE[0]}")" || return "$?"
+  local directory_with_script
+  directory_with_script="$(dirname "${BASH_SOURCE[0]}")" || return "$?"
+
+  # shellcheck source=./is_command_installed.sh
+  source "${directory_with_script}/is_command_installed.sh" || return "$?"
 
   # ========================================
-  # 2. Imports
-  # ========================================
-
-  source "./is_command_installed.sh" || return "$?"
-
-  # ========================================
-  # 3. Arguments
+  # 2. Arguments
   # ========================================
 
   local commandName="${1}"
   if [ -z "${commandName}" ]; then
-    echo "You need to enter command name!" >&2
+    echo "You need to specify command name!" >&2
     return 1
   fi
 
   local packageName="${2}"
 
   # ========================================
-  # 4. Main code
+  # 3. Main code
   # ========================================
 
   local isCommandInstalled

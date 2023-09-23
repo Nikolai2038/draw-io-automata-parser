@@ -3,34 +3,35 @@
 # Start main script of Automata Parser
 function automata_parser() {
   # ========================================
-  # 1. Working directory
+  # 1. Imports
   # ========================================
 
-  # We will work in this script's directory
-  cd "$(dirname "${BASH_SOURCE[0]}")" || return "$?"
+  local directory_with_script
+  directory_with_script="$(dirname "${BASH_SOURCE[0]}")" || return "$?"
+
+  # shellcheck source=./scripts/package/install_command.sh
+  source "${directory_with_script}/scripts/package/install_command.sh" || return "$?"
 
   # ========================================
-  # 2. Imports
-  # ========================================
-
-  source "./scripts/package/install_command.sh" || return "$?"
-
-  # ========================================
-  # 3. Arguments
-  # ========================================
-
-  # None
-
-  # ========================================
-  # 4. Main code
+  # 2. Arguments
   # ========================================
 
   local version="0.1.0"
   echo "Automata Parser v.${version}" >&2
 
-  install_command "curl" || return "$?"
+  local filePath="${1}" && shift
+  if [ -z "${filePath}" ]; then
+    echo "You need to specify file path!" >&2
+    return 1
+  fi
 
-  # TODO: Main code
+  # ========================================
+  # 3. Main code
+  # ========================================
+
+  install_command "xpath" "libxml-xpath-perl" || return "$?"
+
+  xpath -e '//mxCell' "${filePath}"
 
   return 0
 }
