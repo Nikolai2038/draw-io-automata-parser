@@ -83,9 +83,6 @@ function automata_parser() {
 "
     fi
   done
-
-  # DEBUG:
-  # declare -p lines_to_find_K
   # ----------------------------------------
 
   # ----------------------------------------
@@ -135,9 +132,6 @@ function automata_parser() {
             print_error "Calculation for ${CLASS_FAMILY_SYMBOL} cell value failed! class_name = \"${class_name}\""
             return 1
           fi
-
-          # DEBUG:
-          # echo "current_delta: ${current_delta}; ellipse_value: ${ellipse_value}; variable_name_in_list: ${variable_name_in_list}; K_cell_value: ${K_cell_value}"
 
           CELLS["${CLASS_FAMILY_SYMBOL}${class_family_id_previous}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${class_family_linked_cell_value}"
 
