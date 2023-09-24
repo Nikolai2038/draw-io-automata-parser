@@ -17,13 +17,16 @@ export BOLD_LINE="==============================================================
 export BORDER_SYMBOL="|"
 export TABLE_HORIZONTAL_BORDER_SYMBOL="-"
 
+export MIN="min"
+
 export LAMBDA="λ"
 export DELTA="δ"
 
+export LAMBDA_MIN="${LAMBDA}_${MIN}"
+export DELTA_MIN="${DELTA}_${MIN}"
+
 export SYMBOL_ELLIPSES_VALUES="S"
 export SYMBOL_START_ELLIPSE_VALUE="u0"
-
-export MIN="min"
 
 function print_calculations_result() {
   # ========================================
@@ -143,64 +146,13 @@ function print_calculations_result() {
   # ----------------------------------------
 
   # ----------------------------------------
-  # Calculate ellipses values of input automate
-  # ----------------------------------------
-  local input_automate_ellipses_values="${ELLIPSES_VALUES_AS_STRING//"
-"/", "}"
-  # ----------------------------------------
-
-  # ----------------------------------------
-  # Calculate start ellipse of input automate
-  # ----------------------------------------
-  local input_automate_start_ellipse_value
-  input_automate_start_ellipse_value="$(get_node_attribute_value "${START_ARROW_TARGET}" "${ATTRIBUTE_VALUE}")" || return "$?"
-  # ----------------------------------------
-
-  # ----------------------------------------
-  # Calculate ellipses values of result automate
-  # ----------------------------------------
-  local output_automate_ellipses_values="?"
-
-  if ((!was_error)); then
-    declare -a last_calculated_K_symbols=()
-
-    local symbol_id
-    for ((symbol_id = 0; symbol_id < CLASS_SYMBOLS_COUNT; symbol_id++)); do
-      local symbol="${CLASS_SYMBOLS["${symbol_id}"]}"
-      local class_name="${symbol}${LAST_CALCULATED_CLASS_FAMILY_ID}"
-      local class_family_linked_name="${CLASS_FAMILIES["${class_name}"]}"
-
-      if [ -z "${class_family_linked_name}" ]; then
-        break
-      fi
-
-      last_calculated_K_symbols+=("${symbol}")
-    done
-
-    output_automate_ellipses_values="${last_calculated_K_symbols[*]}"
-    output_automate_ellipses_values="${output_automate_ellipses_values//" "/", "}"
-  fi
-  # ----------------------------------------
-
-  # ----------------------------------------
-  # Calculate start ellipse of result automate
-  # ----------------------------------------
-  local output_automate_start_ellipse_value="?"
-
-  if ((!was_error)); then
-    # TODO: Calculate u0min
-    :
-  fi
-  # ----------------------------------------
-
-  # ----------------------------------------
   # Print
   # ----------------------------------------
   echo "${BOLD_LINE}"
   echo "Result:"
   echo "${BOLD_LINE}"
-  echo "${SYMBOL_ELLIPSES_VALUES} = { ${input_automate_ellipses_values} }"
-  echo "${SYMBOL_START_ELLIPSE_VALUE} = ${input_automate_start_ellipse_value}"
+  echo "${SYMBOL_ELLIPSES_VALUES} = { ${INPUT_AUTOMATE_ELLIPSES_VALUES} }"
+  echo "${SYMBOL_START_ELLIPSE_VALUE} = ${INPUT_AUTOMATE_START_ELLIPSE_VALUE}"
   echo ""
   echo "${table_horizontal_border}"
   echo -e "${table_headers}"
@@ -219,8 +171,8 @@ function print_calculations_result() {
   fi
 
   echo ""
-  echo "${SYMBOL_ELLIPSES_VALUES}${MIN} = { ${output_automate_ellipses_values} }"
-  echo "${SYMBOL_START_ELLIPSE_VALUE}${MIN} = ${output_automate_start_ellipse_value}"
+  echo "${SYMBOL_ELLIPSES_VALUES}${MIN} = { ${OUTPUT_AUTOMATE_ELLIPSES_VALUES} }"
+  echo "${SYMBOL_START_ELLIPSE_VALUE}${MIN} = ${OUTPUT_AUTOMATE_START_ELLIPSE_VALUE}"
   echo "${BOLD_LINE}"
   # ----------------------------------------
 

@@ -5,6 +5,7 @@ export ARRAY_INDEX_SEPARATOR="___"
 export CALCULATE_K_ITERATION_LIMIT=50
 
 # Format for element: `cells["<column header 1 name><separator><column header 2 name><separator><row header name>"]="<cell value>"`
+export CELLS
 declare -A CELLS=()
 
 # Start main script of Automata Parser
@@ -167,17 +168,70 @@ function automata_parser() {
   fi
   # ----------------------------------------
 
-  # TODO: Calculate u0min
-  # ...
+  # ----------------------------------------
+  # Calculate ellipses values of input automate
+  # ----------------------------------------
+  export INPUT_AUTOMATE_ELLIPSES_VALUES="${ELLIPSES_VALUES_AS_STRING//"
+"/", "}"
+  # ----------------------------------------
 
-  # TODO: Calculate result table
-  # ...
+  # ----------------------------------------
+  # Calculate start ellipse of input automate
+  # ----------------------------------------
+  export INPUT_AUTOMATE_START_ELLIPSE_VALUE
+  INPUT_AUTOMATE_START_ELLIPSE_VALUE="$(get_node_attribute_value "${START_ARROW_TARGET}" "${ATTRIBUTE_VALUE}")" || return "$?"
+  # ----------------------------------------
 
-  # TODO: Insert K columns in first table
-  # ...
+  # ----------------------------------------
+  # Calculate ellipses values of result automate
+  # ----------------------------------------
+  declare -a last_class_family_symbols=()
 
-  # TODO: Add check on infinite K calculating when they switch each other
-  # ...
+  if ((!was_error)); then
+    local symbol_id
+    for ((symbol_id = 0; symbol_id < CLASS_SYMBOLS_COUNT; symbol_id++)); do
+      local symbol="${CLASS_SYMBOLS["${symbol_id}"]}"
+      local class_name="${symbol}${LAST_CALCULATED_CLASS_FAMILY_ID}"
+      local class_family_linked_name="${CLASS_FAMILIES["${class_name}"]}"
+
+      if [ -z "${class_family_linked_name}" ]; then
+        break
+      fi
+
+      last_class_family_symbols+=("${symbol}")
+    done
+  fi
+
+  local last_class_family_symbols_count="${#last_class_family_symbols[@]}"
+
+  export OUTPUT_AUTOMATE_ELLIPSES_VALUES="?"
+
+  if ((!was_error)); then
+    OUTPUT_AUTOMATE_ELLIPSES_VALUES="${last_class_family_symbols[*]}"
+    OUTPUT_AUTOMATE_ELLIPSES_VALUES="${OUTPUT_AUTOMATE_ELLIPSES_VALUES//" "/", "}"
+  fi
+  # ----------------------------------------
+
+  # ----------------------------------------
+  # Calculate start ellipse of result automate
+  # ----------------------------------------
+  export OUTPUT_AUTOMATE_START_ELLIPSE_VALUE="?"
+
+  if ((!was_error)); then
+    local symbol_id
+    for ((symbol_id = 0; symbol_id < last_class_family_symbols_count; symbol_id++)); do
+      local symbol="${last_class_family_symbols["${symbol_id}"]}"
+      local class_name="${symbol}${LAST_CALCULATED_CLASS_FAMILY_ID}"
+      local class_family_linked_name="${CLASS_FAMILIES["${class_name}"]}"
+
+      # Add extra spaces to match first and last numbers in class_family_linked_name
+      if [[ " ${class_family_linked_name} " == *" ${INPUT_AUTOMATE_START_ELLIPSE_VALUE} "* ]]; then
+        OUTPUT_AUTOMATE_START_ELLIPSE_VALUE="${symbol}"
+        break
+      fi
+    done
+  fi
+  # ----------------------------------------
 
   print_calculations_result "${was_error}" || return "$?"
 
