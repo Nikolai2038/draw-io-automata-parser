@@ -1,6 +1,6 @@
 # Draw IO Automata Parser
 
-Script for finding minimal automata from automata, represented by diagrams in files `*.drawio`.
+Script for finding minimal automata for the represented one in diagram file `*.drawio`.
 
 ## Requirements
 
