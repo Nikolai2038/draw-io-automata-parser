@@ -11,13 +11,12 @@ fi
 export C_INFO='\e[0;36m'
 # Color for successful execution
 export C_SUCCESS='\e[0;32m'
+# Color for highlighted text
+export C_HIGHLIGHT='\e[1;95m'
 # Color for error
 export C_WARNING='\e[0;33m'
 # Color for error
 export C_ERROR='\e[0;31m'
-
-# Color for highlighted text
-export C_HIGHLIGHT='\e[1;95m'
 
 # Reset color
 export C_RESET='\e[0m'
@@ -70,6 +69,13 @@ function print_info() {
 function print_success() {
   local text="${1}" && shift
   print_color_message "${C_SUCCESS}" "${text}" >&2 || return "$?"
+  return 0
+}
+
+# Prints highlighted message
+function print_highlight() {
+  local text="${1}" && shift
+  print_color_message "${C_HIGHLIGHT}" "${text}" >&2 || return "$?"
   return 0
 }
 

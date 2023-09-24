@@ -10,9 +10,10 @@ function is_command_installed() {
   # 1. Imports
   # ========================================
 
-  cd "$(dirname "${BASH_SOURCE[0]}")" || return "$?"
+  local source_previous_directory="${PWD}"
+  cd "$(dirname "$(find "$(dirname "${0}")" -name "$(basename "${BASH_SOURCE[0]}")" | head -n 1)")" || return "$?"
   source "../messages.sh" || return "$?"
-  cd - >/dev/null || return "$?"
+  cd "${source_previous_directory}" || return "$?"
 
   # ========================================
   # 2. Arguments

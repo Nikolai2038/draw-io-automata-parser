@@ -14,11 +14,12 @@ function load_xml() {
   # 1. Imports
   # ========================================
 
-  cd "$(dirname "${BASH_SOURCE[0]}")" || return "$?"
+  local source_previous_directory="${PWD}"
+  cd "$(dirname "$(find "$(dirname "${0}")" -name "$(basename "${BASH_SOURCE[0]}")" | head -n 1)")" || return "$?"
   source "./../../1_portable/messages.sh" || return "$?"
   source "./get_node_attribute_value.sh" || return "$?"
   source "./get_node_with_attribute_value.sh" || return "$?"
-  cd - >/dev/null || return "$?"
+  cd "${source_previous_directory}" || return "$?"
 
   # ========================================
   # 2. Arguments
@@ -34,7 +35,7 @@ function load_xml() {
   # 3. Main code
   # ========================================
 
-  print_info "Loading file \"${file_path}\"..."
+  print_info "Loading file ${C_HIGHLIGHT}${file_path}${C_RETURN}..."
 
   local file_content
   file_content="$(cat "${file_path}")" || return "$?"
@@ -190,7 +191,7 @@ function load_xml() {
   print_success "Found ${C_HIGHLIGHT}${connected_arrows_count}${C_RETURN} connected arrows!"
   # ----------------------------------------
 
-  print_success "Loading file \"${file_path}\": done!"
+  print_success "Loading file ${C_HIGHLIGHT}${file_path}${C_RETURN}: done!"
   return 0
 }
 

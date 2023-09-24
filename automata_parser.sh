@@ -22,7 +22,8 @@ function automata_parser() {
   # 1. Imports
   # ========================================
 
-  cd "$(dirname "${BASH_SOURCE[0]}")" || return "$?"
+  local source_previous_directory="${PWD}"
+  cd "$(dirname "$(find "$(dirname "${0}")" -name "$(basename "${BASH_SOURCE[0]}")" | head -n 1)")" || return "$?"
   source "./scripts/1_portable/package/install_command.sh" || return "$?"
   source "./scripts/1_portable/messages.sh" || return "$?"
   source "./scripts/2_inner/xpath/load_xml.sh" || return "$?"
@@ -31,7 +32,7 @@ function automata_parser() {
   source "./scripts/2_inner/xpath/get_node_with_attribute_value.sh" || return "$?"
   source "./scripts/2_inner/class_family_calculate.sh" || return "$?"
   source "./scripts/2_inner/class_family_print.sh" || return "$?"
-  cd - >/dev/null || return "$?"
+  cd "${source_previous_directory}" || return "$?"
 
   # ========================================
   # 2. Arguments
@@ -87,7 +88,7 @@ function automata_parser() {
   for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
     local ellipse_id="${ellipses_ids["${ellipse_id_in_list}"]}"
     local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
-    print_info "Calculate data for ellipse with value \"${ellipse_value}\"!"
+    print_info "Calculate data for ellipse with value ${C_HIGHLIGHT}${ellipse_value}${C_RETURN}!"
 
     local arrows_from_ellipse
     arrows_from_ellipse="$(get_node_with_attribute_value "${CONNECTED_ARROWS_XML}" "${ATTRIBUTE_SOURCE}" "${ellipse_id}")" || return "$?"
@@ -120,7 +121,7 @@ function automata_parser() {
     for ((arrow_id_in_list = 0; arrow_id_in_list < arrows_from_ellipse_count; arrow_id_in_list++)); do
       local arrow_value="${arrow_values["${arrow_id_in_list}"]}"
 
-      print_info "- Calculate data for arrow with value \"${arrow_value}\"!"
+      print_info "- Calculate data for arrow with value ${C_HIGHLIGHT}${arrow_value}${C_RETURN}!"
 
       local arrow_target_id="${arrow_targets["${arrow_id_in_list}"]}"
       local arrow_target_node
@@ -173,16 +174,16 @@ function automata_parser() {
   # ----------------------------------------
   # Prepare for K calculations
   # ----------------------------------------
-  declare -A lines_to_find_K=()
+  declare -A lines_to_find_family_class=()
 
   for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
     local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
 
-    lines_to_find_K["0"]+="${ellipse_value}"
+    lines_to_find_family_class["0"]+="${ellipse_value}"
 
     # Make sure to not add extra line because we count them in class_family_calculate function
     if ((ellipse_id_in_list != ellipses_count - 1)); then
-      lines_to_find_K["0"]+="
+      lines_to_find_family_class["0"]+="
 "
     fi
 
@@ -190,12 +191,12 @@ function automata_parser() {
     for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
       local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
       local current_lambda="${cells["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
-      lines_to_find_K["1"]+=" ${current_lambda:-"${TABLE_EMPTY_CELL}"}"
+      lines_to_find_family_class["1"]+=" ${current_lambda:-"${TABLE_EMPTY_CELL}"}"
     done
 
     # Make sure to not add extra line because we count them in class_family_calculate function
     if ((ellipse_id_in_list != ellipses_count - 1)); then
-      lines_to_find_K["1"]+="
+      lines_to_find_family_class["1"]+="
 "
     fi
   done
@@ -215,9 +216,9 @@ function automata_parser() {
   local last_calculated_class_family_id=0
 
   while [[ "${class_family_current}" != "${class_family_previous}" ]] && ((class_family_id < CALCULATE_K_ITERATION_LIMIT)); do
-    print_info "Calculate K${class_family_id}..."
+    print_info "Calculate ${C_HIGHLIGHT}${CLASS_FAMILY_SYMBOL}${class_family_id}${C_RETURN}..."
 
-    # For Ks greater than 1 we need to calculate lines_to_find_K based on previous K
+    # For Ks greater than 1 we need to calculate lines_to_find_K based on previous family class
     if ((class_family_id > 1)); then
       local class_family_id_previous="$((class_family_id - 1))"
 
@@ -228,7 +229,7 @@ function automata_parser() {
           local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
           local current_delta="${cells["${DELTA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
 
-          # Find cell value for previous K
+          # Find cell value for previous family class
           local class_family_linked_cell_value=""
 
           local symbol_id
@@ -240,7 +241,7 @@ function automata_parser() {
               continue
             fi
 
-            # Add extra spaces to match first and last numbers in K_value
+            # Add extra spaces to match first and last numbers in class_family_linked_name
             if [[ " ${class_family_linked_name} " == *" ${current_delta} "* ]]; then
               class_family_linked_cell_value="${class_name}"
               break
@@ -257,25 +258,25 @@ function automata_parser() {
 
           cells["${CLASS_FAMILY_SYMBOL}${class_family_id_previous}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${class_family_linked_cell_value}"
 
-          lines_to_find_K["${class_family_id}"]+=" ${class_family_linked_cell_value:-"${TABLE_EMPTY_CELL}"}"
+          lines_to_find_family_class["${class_family_id}"]+=" ${class_family_linked_cell_value:-"${TABLE_EMPTY_CELL}"}"
         done
 
         # Make sure to not add extra line because we count them in class_family_calculate function
         if ((ellipse_id_in_list != ellipses_count - 1)); then
-          lines_to_find_K["${class_family_id}"]+="
+          lines_to_find_family_class["${class_family_id}"]+="
 "
         fi
       done
     fi
 
-    class_family_calculate "${ellipses_values_as_string}" "${lines_to_find_K["${class_family_id}"]}" "${class_family_id}" || return "$?"
+    class_family_calculate "${ellipses_values_as_string}" "${lines_to_find_family_class["${class_family_id}"]}" "${class_family_id}" || return "$?"
     last_calculated_class_family_id="$((class_families_count))"
     ((class_families_count++))
 
     class_family_previous="${class_family_current}"
     class_family_current="$(class_family_print "${class_family_id}" "${DO_NOT_PRINT_CLASS_FAMILY_ID}")" || return "$?"
 
-    print_info "K${class_family_id} = $(class_family_print "${class_family_id}" "${DO_PRINT_CLASS_FAMILY_ID}")" || return "$?"
+    print_info "- ${C_HIGHLIGHT}${CLASS_FAMILY_SYMBOL}${class_family_id} = $(class_family_print "${class_family_id}" "${DO_PRINT_CLASS_FAMILY_ID}")${C_RETURN}" || return "$?"
 
     ((class_family_id++))
   done
@@ -347,7 +348,7 @@ function automata_parser() {
   # ----------------------------------------
   echo ""
   for ((class_family_id = 0; class_family_id < class_families_count; class_family_id++)); do
-    echo -n "K${class_family_id} = "
+    echo -n "${CLASS_FAMILY_SYMBOL}${class_family_id} = "
     class_family_print "${class_family_id}" "${DO_PRINT_CLASS_FAMILY_ID}" || return "$?"
   done
   # ----------------------------------------

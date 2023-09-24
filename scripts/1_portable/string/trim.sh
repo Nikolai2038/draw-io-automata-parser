@@ -4,36 +4,32 @@ if [ -n "${IS_FILE_SOURCED_TEMPLATE}" ]; then
   return
 fi
 
-function template() {
+function trim() {
   # ========================================
   # 1. Imports
-  # ========================================
-
-  local source_previous_directory="${PWD}"
-  cd "$(dirname "$(find "$(dirname "${0}")" -name "$(basename "${BASH_SOURCE[0]}")" | head -n 1)")" || return "$?"
-  # source "./scripts/..." || return "$?"
-  # source "./scripts/..." || return "$?"
-  # source "./scripts/..." || return "$?"
-  cd "${source_previous_directory}" || return "$?"
-
-  # ========================================
-  # 2. Arguments
   # ========================================
 
   # None
 
   # ========================================
+  # 2. Arguments
+  # ========================================
+
+  local text="${1}" && shift
+
+  # ========================================
   # 3. Main code
   # ========================================
 
-  # ...
+  # First we use sed to remove empty lines at the beginning and end of the text, then we use set to remove extra spaces at the beginning of the first line and at the end of the last
+  echo "${text}" | sed -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}' -e '/./,$!d' | sed -e '1s/^[[:space:]]*//' -e '$s/[[:space:]]*$//' || return "$?"
 
   return 0
 }
 
 # If script is not sourced - we execute it
 if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
-  template "$@" || exit "$?"
+  trim "$@" || exit "$?"
 fi
 
 export IS_FILE_SOURCED_TEMPLATE=1

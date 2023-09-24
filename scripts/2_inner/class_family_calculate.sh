@@ -15,9 +15,10 @@ function class_family_calculate() {
   # 1. Imports
   # ========================================
 
-  cd "$(dirname "${BASH_SOURCE[0]}")" || return "$?"
+  local source_previous_directory="${PWD}"
+  cd "$(dirname "$(find "$(dirname "${0}")" -name "$(basename "${BASH_SOURCE[0]}")" | head -n 1)")" || return "$?"
   source "../1_portable/messages.sh" || return "$?"
-  cd - >/dev/null || return "$?"
+  cd "${source_previous_directory}" || return "$?"
 
   # ========================================
   # 2. Arguments
@@ -29,9 +30,9 @@ function class_family_calculate() {
     return 1
   fi
 
-  local lines_as_string="${1}" && shift
-  if [ -z "${lines_as_string}" ]; then
-    print_error "You need to specify lines as string!"
+  local lines_to_find_family_class="${1}" && shift
+  if [ -z "${lines_to_find_family_class}" ]; then
+    print_error "You need to specify string to find family class!"
     return 1
   fi
 
@@ -45,11 +46,11 @@ function class_family_calculate() {
   # 3. Main code
   # ========================================
 
-  declare -a ellipses_values
+  declare -a ellipses_values=()
   mapfile -t ellipses_values <<<"${ellipses_values_as_string}" || return "$?"
 
-  declare -a lines
-  mapfile -t lines <<<"${lines_as_string}" || return "$?"
+  declare -a lines=()
+  mapfile -t lines <<<"${lines_to_find_family_class}" || return "$?"
 
   local lines_count="${#lines[@]}"
 
