@@ -215,7 +215,7 @@ function print_calculations_result() {
   echo "${table_1_horizontal_border}"
   echo -e "${table_1_headers}"
   echo "${table_1_horizontal_border}"
-  echo -e "${table_1_content}" | sort --unique
+  echo -e "${table_1_content}"
   echo "${table_1_horizontal_border}"
 
   # Print class families
@@ -235,7 +235,7 @@ function print_calculations_result() {
   echo "${table_2_horizontal_border}"
   echo -e "${table_2_headers}"
   echo "${table_2_horizontal_border}"
-  echo -e "${table_2_content}" | sort --unique
+  echo -e "${table_2_content}"
   echo "${table_2_horizontal_border}"
   echo "${BOLD_LINE}"
   # ----------------------------------------

@@ -215,6 +215,30 @@ function load_xml() {
   mapfile -t ELLIPSES_VALUES <<<"${ELLIPSES_VALUES_AS_STRING}" || return "$?"
   # ----------------------------------------
 
+  # ----------------------------------------
+  # Sort ellipses attributes based on ellipses values
+  # ----------------------------------------
+  local ellipses_attributes_as_string
+  local ellipse_id_in_list
+  for ((ellipse_id_in_list = 0; ellipse_id_in_list < ELLIPSES_COUNT; ellipse_id_in_list++)); do
+    # Values goes first because we will sort based on them
+    ellipses_attributes_as_string+="${ELLIPSES_VALUES["${ellipse_id_in_list}"]} ${ELLIPSES_IDS["${ellipse_id_in_list}"]}"
+
+    # Make sure last line is not line break because `sort` later will move it to the top
+    if ((ellipse_id_in_list != ELLIPSES_COUNT - 1)); then
+      ellipses_attributes_as_string+="\n"
+    fi
+  done
+
+  ellipses_attributes_as_string="$(echo -e "${ellipses_attributes_as_string}" | sort --unique)" || return "$?"
+
+  ellipses_ids_as_string="$(echo "${ellipses_attributes_as_string}" | cut -d ' ' -f 2)" || return "$?"
+  ELLIPSES_VALUES_AS_STRING="$(echo "${ellipses_attributes_as_string}" | cut -d ' ' -f 1)" || return "$?"
+
+  mapfile -t ELLIPSES_IDS <<<"${ellipses_ids_as_string}" || return "$?"
+  mapfile -t ELLIPSES_VALUES <<<"${ELLIPSES_VALUES_AS_STRING}" || return "$?"
+  # ----------------------------------------
+
   print_success "Loading file ${C_HIGHLIGHT}${file_path}${C_RETURN}: done!"
   return 0
 }
