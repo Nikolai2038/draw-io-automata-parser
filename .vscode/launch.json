@@ -8,7 +8,7 @@
             "name": "Bash-Debug (simplest configuration)",
             "program": "${file}",
             "args": [
-                "./diagrams/0001-example.drawio"
+                "./diagrams/examples/0001_example_input.drawio"
             ]
         }
     ]

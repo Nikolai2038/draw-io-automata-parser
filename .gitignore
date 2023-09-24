@@ -3,3 +3,8 @@
 
 # draw.io temp files
 *.bkp
+
+# Do not store private diagrams in GIT
+/diagrams/*
+# Keep examples in GIT
+!/diagrams/examples
