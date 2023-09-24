@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -n "${IS_FILE_SOURCED_TEMPLATE}" ]; then
+if [ -n "${IS_FILE_SOURCED_FILL_LAMDA_AND_DELTA_AND_VARIABLES_NAMES}" ]; then
   return
 fi
 
@@ -113,4 +113,4 @@ if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
   fill_lamda_and_delta_and_variables_names "$@" || exit "$?"
 fi
 
-export IS_FILE_SOURCED_TEMPLATE=1
+export IS_FILE_SOURCED_FILL_LAMDA_AND_DELTA_AND_VARIABLES_NAMES=1

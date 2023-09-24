@@ -4,6 +4,9 @@ if [ -n "${IS_FILE_SOURCED_CLASS_FAMILY_PRINT}" ]; then
   return
 fi
 
+export DO_NOT_PRINT_CLASS_FAMILY_ID=0
+export DO_PRINT_CLASS_FAMILY_ID=1
+
 function class_family_print() {
   # ========================================
   # 1. Imports

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -n "${IS_FILE_SOURCED_TEMPLATE}" ]; then
+if [ -n "${IS_FILE_SOURCED_TRIM}" ]; then
   return
 fi
 
@@ -32,4 +32,4 @@ if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
   trim "$@" || exit "$?"
 fi
 
-export IS_FILE_SOURCED_TEMPLATE=1
+export IS_FILE_SOURCED_TRIM=1
