@@ -16,6 +16,9 @@ export CALCULATE_K_ITERATION_LIMIT=50
 export DO_NOT_PRINT_CLASS_FAMILY_ID=0
 export DO_PRINT_CLASS_FAMILY_ID=1
 
+# Format for element: `cells["<column header 1 name><separator><column header 2 name><separator><row header name>"]="<cell value>"`
+declare -A CELLS=()
+
 # Start main script of Automata Parser
 function automata_parser() {
   # ========================================
@@ -30,6 +33,7 @@ function automata_parser() {
   source "./scripts/2_inner/xpath/get_nodes_count.sh" || return "$?"
   source "./scripts/2_inner/xpath/get_node_attribute_value.sh" || return "$?"
   source "./scripts/2_inner/xpath/get_node_with_attribute_value.sh" || return "$?"
+  source "./scripts/2_inner/xpath/fill_lamda_and_delta_and_variables_names.sh" || return "$?"
   source "./scripts/2_inner/class_family_calculate.sh" || return "$?"
   source "./scripts/2_inner/class_family_print.sh" || return "$?"
   cd "${source_previous_directory}" || return "$?"
@@ -54,148 +58,34 @@ function automata_parser() {
 
   print_info "Parsing..."
 
-  local ellipses_ids_as_string
-  ellipses_ids_as_string="$(get_node_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_ID}")" || return "$?"
-  if [ -z "${ellipses_ids_as_string}" ]; then
-    print_error "Ellipses ids as string is empty!"
-    return 1
-  fi
-  declare -a ellipses_ids
-  mapfile -t ellipses_ids <<<"${ellipses_ids_as_string}" || return "$?"
-
-  local ellipses_values_as_string
-  ellipses_values_as_string="$(get_node_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_VALUE}")" || return "$?"
-  if [ -z "${ellipses_values_as_string}" ]; then
-    print_error "Ellipses values as string is empty!"
-    return 1
-  fi
-  declare -a ellipses_values
-  mapfile -t ellipses_values <<<"${ellipses_values_as_string}" || return "$?"
-
-  # TODO: Add this check later
-  # declare -a ellipses_is_in_scheme=()
-  # local ellipse_id_in_list
-  # for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
-  #   ellipses_is_in_scheme+=("0")
-  # done
-
-  declare -a variables_names=()
-
-  # Format for element: `cells["<column header 1 name><separator><column header 2 name><separator><row header name>"]="<cell value>"`
-  declare -A cells=()
-
-  local ellipse_id_in_list
-  for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
-    local ellipse_id="${ellipses_ids["${ellipse_id_in_list}"]}"
-    local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
-    print_info "Calculate data for ellipse with value ${C_HIGHLIGHT}${ellipse_value}${C_RETURN}!"
-
-    local arrows_from_ellipse
-    arrows_from_ellipse="$(get_node_with_attribute_value "${CONNECTED_ARROWS_XML}" "${ATTRIBUTE_SOURCE}" "${ellipse_id}")" || return "$?"
-    local arrows_from_ellipse_count
-    arrows_from_ellipse_count="$(get_nodes_count "${arrows_from_ellipse}")" || return "$?"
-    if ((arrows_from_ellipse_count < 1)); then
-      continue
-    fi
-
-    local arrow_values_as_string
-    arrow_values_as_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_VALUE}")"
-    if [ -z "${arrow_values_as_string}" ]; then
-      print_error "Arrow values as string is empty!"
-      return 1
-    fi
-    declare -a arrow_values
-    mapfile -t arrow_values <<<"${arrow_values_as_string}" || return "$?"
-
-    local arrow_ids_string
-    arrow_ids_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_ID}")"
-    declare -a arrow_ids
-    mapfile -t arrow_ids <<<"${arrow_ids_string}" || return "$?"
-
-    local arrow_targets_string
-    arrow_targets_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_TARGET}")"
-    declare -a arrow_targets
-    mapfile -t arrow_targets <<<"${arrow_targets_string}" || return "$?"
-
-    local arrow_id_in_list
-    for ((arrow_id_in_list = 0; arrow_id_in_list < arrows_from_ellipse_count; arrow_id_in_list++)); do
-      local arrow_value="${arrow_values["${arrow_id_in_list}"]}"
-
-      print_info "- Calculate data for arrow with value ${C_HIGHLIGHT}${arrow_value}${C_RETURN}!"
-
-      local arrow_target_id="${arrow_targets["${arrow_id_in_list}"]}"
-      local arrow_target_node
-      arrow_target_node="$(get_node_with_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_ID}" "${arrow_target_id}")" || return "$?"
-      local arrow_target_value
-      arrow_target_value="$(get_node_attribute_value "${arrow_target_node}" "${ATTRIBUTE_VALUE}")" || return "$?"
-
-      # DEBUG:
-      # echo "arrow_id: $arrow_id"
-      # echo "arrow_value: $arrow_value"
-      # echo "arrow_target_value: $arrow_target_value"
-
-      local arrow_variable_regexpr="([^\\/]+)\\/([^\\/]+)"
-
-      local arrow_variable_name
-      arrow_variable_name="$(echo "${arrow_value}" | sed -En "s/${arrow_variable_regexpr}/\1/p")" || return "$?"
-
-      local arrow_variable_value
-      arrow_variable_value="$(echo "${arrow_value}" | sed -En "s/${arrow_variable_regexpr}/\2/p")" || return "$?"
-
-      if [ -z "${arrow_variable_name}" ] || [ -z "${arrow_variable_value}" ]; then
-        print_error "Failed to get variable name and value from arrow with value \"${arrow_value}\" from ellipse with value \"${ellipse_value}\"! You must add text to arrow in format \"<variable name>/<variable value>\""
-        return 1
-      fi
-
-      # Collecting all variables names into "variables_names" array
-      variables_names+=("${arrow_variable_name}")
-
-      local current_lambda="${cells["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
-      if [ -n "${current_lambda}" ]; then
-        print_error "From ellipse with value \"${ellipse_value}\" there are more than one arrows with variable name \"${arrow_variable_name}\"!"
-        return 1
-      fi
-
-      cells["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${arrow_variable_value}"
-      cells["${DELTA}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${arrow_target_value}"
-    done
-  done
-
-  # Sort variables names
-  local variables_names_string_sorted
-  variables_names_string_sorted="$(echo "${variables_names[@]}" | tr ' ' '\n' | sort --unique)" || return "$?"
-  mapfile -t variables_names <<<"${variables_names_string_sorted}" || return "$?"
-
-  local variables_names_count="${#variables_names[@]}"
-
-  # DEBUG:
-  # echo "variables_names_count: $variables_names_count"
+  fill_lamda_and_delta_and_variables_names || return "$?"
 
   # ----------------------------------------
   # Prepare for K calculations
   # ----------------------------------------
   declare -A lines_to_find_family_class=()
 
-  for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
-    local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
+  local ellipse_id_in_list
+  for ((ellipse_id_in_list = 0; ellipse_id_in_list < ELLIPSES_COUNT; ellipse_id_in_list++)); do
+    local ellipse_value="${ELLIPSES_VALUES["${ellipse_id_in_list}"]}"
 
     lines_to_find_family_class["0"]+="${ellipse_value}"
 
     # Make sure to not add extra line because we count them in class_family_calculate function
-    if ((ellipse_id_in_list != ellipses_count - 1)); then
+    if ((ellipse_id_in_list != ELLIPSES_COUNT - 1)); then
       lines_to_find_family_class["0"]+="
 "
     fi
 
     local variable_name_id_in_list
-    for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
-      local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
-      local current_lambda="${cells["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
+    for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
+      local variable_name_in_list="${VARIABLES_NAMES["${variable_name_id_in_list}"]}"
+      local current_lambda="${CELLS["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
       lines_to_find_family_class["1"]+=" ${current_lambda:-"${TABLE_EMPTY_CELL}"}"
     done
 
     # Make sure to not add extra line because we count them in class_family_calculate function
-    if ((ellipse_id_in_list != ellipses_count - 1)); then
+    if ((ellipse_id_in_list != ELLIPSES_COUNT - 1)); then
       lines_to_find_family_class["1"]+="
 "
     fi
@@ -222,12 +112,12 @@ function automata_parser() {
     if ((class_family_id > 1)); then
       local class_family_id_previous="$((class_family_id - 1))"
 
-      for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
-        local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
+      for ((ellipse_id_in_list = 0; ellipse_id_in_list < ELLIPSES_COUNT; ellipse_id_in_list++)); do
+        local ellipse_value="${ELLIPSES_VALUES["${ellipse_id_in_list}"]}"
 
-        for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
-          local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
-          local current_delta="${cells["${DELTA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
+        for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
+          local variable_name_in_list="${VARIABLES_NAMES["${variable_name_id_in_list}"]}"
+          local current_delta="${CELLS["${DELTA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
 
           # Find cell value for previous family class
           local class_family_linked_cell_value=""
@@ -256,20 +146,20 @@ function automata_parser() {
           # DEBUG:
           # echo "current_delta: ${current_delta}; ellipse_value: ${ellipse_value}; variable_name_in_list: ${variable_name_in_list}; K_cell_value: ${K_cell_value}"
 
-          cells["${CLASS_FAMILY_SYMBOL}${class_family_id_previous}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${class_family_linked_cell_value}"
+          CELLS["${CLASS_FAMILY_SYMBOL}${class_family_id_previous}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${class_family_linked_cell_value}"
 
           lines_to_find_family_class["${class_family_id}"]+=" ${class_family_linked_cell_value:-"${TABLE_EMPTY_CELL}"}"
         done
 
         # Make sure to not add extra line because we count them in class_family_calculate function
-        if ((ellipse_id_in_list != ellipses_count - 1)); then
+        if ((ellipse_id_in_list != ELLIPSES_COUNT - 1)); then
           lines_to_find_family_class["${class_family_id}"]+="
 "
         fi
       done
     fi
 
-    class_family_calculate "${ellipses_values_as_string}" "${lines_to_find_family_class["${class_family_id}"]}" "${class_family_id}" || return "$?"
+    class_family_calculate "${ELLIPSES_VALUES_AS_STRING}" "${lines_to_find_family_class["${class_family_id}"]}" "${class_family_id}" || return "$?"
     last_calculated_class_family_id="$((class_families_count))"
     ((class_families_count++))
 
@@ -296,11 +186,11 @@ function automata_parser() {
   local table_header_variables=""
 
   local variable_name_id_in_list
-  for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
+  for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
     table_header_lambda+="${TABLE_BEFORE_CELL_VALUE}${LAMBDA}${TABLE_AFTER_CELL_VALUE}|"
     table_header_delta+="${TABLE_BEFORE_CELL_VALUE}${DELTA}${TABLE_AFTER_CELL_VALUE}|"
 
-    local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
+    local variable_name_in_list="${VARIABLES_NAMES["${variable_name_id_in_list}"]}"
     table_header_variables+="${TABLE_BEFORE_CELL_VALUE}${variable_name_in_list}${TABLE_AFTER_CELL_VALUE}|"
   done
   table_header_lambda+=""
@@ -321,20 +211,20 @@ function automata_parser() {
 
   local result
 
-  for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
-    local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
+  for ((ellipse_id_in_list = 0; ellipse_id_in_list < ELLIPSES_COUNT; ellipse_id_in_list++)); do
+    local ellipse_value="${ELLIPSES_VALUES["${ellipse_id_in_list}"]}"
 
     result+="|${TABLE_BEFORE_CELL_VALUE}${ellipse_value}${TABLE_AFTER_CELL_VALUE}"
 
-    for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
-      local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
-      local current_lambda="${cells["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
+    for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
+      local variable_name_in_list="${VARIABLES_NAMES["${variable_name_id_in_list}"]}"
+      local current_lambda="${CELLS["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
       result+="|${TABLE_BEFORE_CELL_VALUE}${current_lambda:-"${TABLE_EMPTY_CELL}"}${TABLE_AFTER_CELL_VALUE}"
     done
 
-    for ((variable_name_id_in_list = 0; variable_name_id_in_list < variables_names_count; variable_name_id_in_list++)); do
-      local variable_name_in_list="${variables_names["${variable_name_id_in_list}"]}"
-      local current_delta="${cells["${DELTA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
+    for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
+      local variable_name_in_list="${VARIABLES_NAMES["${variable_name_id_in_list}"]}"
+      local current_delta="${CELLS["${DELTA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
       result+="|${TABLE_BEFORE_CELL_VALUE}${current_delta:-"${TABLE_EMPTY_CELL}"}${TABLE_AFTER_CELL_VALUE}"
     done
 

@@ -9,6 +9,19 @@ export ATTRIBUTE_TARGET="target"
 export ATTRIBUTE_SOURCE="source"
 export ATTRIBUTE_VALUE="value"
 
+export XML_ELLIPSES
+export ELLIPSES_COUNT
+export START_ARROW_TARGET_VALUE
+export CONNECTED_ARROWS_XML
+
+export ELLIPSES_VALUES_AS_STRING
+
+export ELLIPSES_IDS
+declare -a ELLIPSES_IDS
+
+export ELLIPSES_VALUES
+declare -a ELLIPSES_VALUES
+
 function load_xml() {
   # ========================================
   # 1. Imports
@@ -60,20 +73,18 @@ function load_xml() {
   # ----------------------------------------
   # Ellipses
   # ----------------------------------------
-  export XML_ELLIPSES
   XML_ELLIPSES="$(echo "<xml>${xml_elements}</xml>" | xpath -q -e "
     //mxCell[
       starts-with(@style, \"ellipse;\")
     ]
   ")" || return "$?"
-  export ellipses_count
-  ellipses_count="$(get_nodes_count "${XML_ELLIPSES}")" || return "$?"
+  ELLIPSES_COUNT="$(get_nodes_count "${XML_ELLIPSES}")" || return "$?"
 
-  if ((ellipses_count < 1)); then
+  if ((ELLIPSES_COUNT < 1)); then
     print_error "No ellipses found!"
     return 1
   fi
-  print_success "Found ${C_HIGHLIGHT}${ellipses_count}${C_RETURN} ellipses!"
+  print_success "Found ${C_HIGHLIGHT}${ELLIPSES_COUNT}${C_RETURN} ellipses!"
   # ----------------------------------------
 
   # ----------------------------------------
@@ -134,7 +145,6 @@ function load_xml() {
   start_arrow_target="$(get_node_with_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_ID}" "${start_arrow_target_id}")" || return "$?"
 
   # Find first ellipsis value
-  export START_ARROW_TARGET_VALUE
   START_ARROW_TARGET_VALUE="$(get_node_attribute_value "${start_arrow_target}" "${ATTRIBUTE_VALUE}")" || return "$?"
   # ----------------------------------------
 
@@ -173,7 +183,6 @@ function load_xml() {
   # ----------------------------------------
   # Connected arrows
   # ----------------------------------------
-  export CONNECTED_ARROWS_XML
   CONNECTED_ARROWS_XML="$(echo "<xml>${arrows_xml}</xml>" | xpath -q -e "
     //mxCell[
       @source
@@ -189,6 +198,25 @@ function load_xml() {
     return 1
   fi
   print_success "Found ${C_HIGHLIGHT}${connected_arrows_count}${C_RETURN} connected arrows!"
+  # ----------------------------------------
+
+  # ----------------------------------------
+  # Ellipses attributes
+  # ----------------------------------------
+  local ellipses_ids_as_string
+  ellipses_ids_as_string="$(get_node_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_ID}")" || return "$?"
+  if [ -z "${ellipses_ids_as_string}" ]; then
+    print_error "Ellipses ids as string is empty!"
+    return 1
+  fi
+  mapfile -t ELLIPSES_IDS <<<"${ellipses_ids_as_string}" || return "$?"
+
+  ELLIPSES_VALUES_AS_STRING="$(get_node_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_VALUE}")" || return "$?"
+  if [ -z "${ELLIPSES_VALUES_AS_STRING}" ]; then
+    print_error "Ellipses values as string is empty!"
+    return 1
+  fi
+  mapfile -t ELLIPSES_VALUES <<<"${ELLIPSES_VALUES_AS_STRING}" || return "$?"
   # ----------------------------------------
 
   print_success "Loading file ${C_HIGHLIGHT}${file_path}${C_RETURN}: done!"

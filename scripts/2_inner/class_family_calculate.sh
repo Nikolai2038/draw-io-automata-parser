@@ -5,9 +5,13 @@ if [ -n "${IS_FILE_SOURCED_CLASS_FAMILY_CALCULATE}" ]; then
 fi
 
 export CLASS_FAMILY_SYMBOL="K"
+
+export CLASS_FAMILIES
 declare -A CLASS_FAMILIES=()
 
+export CLASS_SYMBOLS
 declare -a CLASS_SYMBOLS=("A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z")
+
 export CLASS_SYMBOLS_COUNT="${#CLASS_SYMBOLS[@]}"
 
 function class_family_calculate() {
