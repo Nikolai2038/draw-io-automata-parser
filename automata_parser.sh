@@ -1,20 +1,20 @@
 #!/bin/bash
 
-SCRIPTS_VERSION="0.1.0"
+export SCRIPTS_VERSION="0.1.0"
 
-ARRAY_INDEX_SEPARATOR="___"
+export ARRAY_INDEX_SEPARATOR="___"
 
-TABLE_BEFORE_CELL_VALUE="   "
-TABLE_AFTER_CELL_VALUE="   "
-TABLE_EMPTY_CELL="?"
+export TABLE_BEFORE_CELL_VALUE="   "
+export TABLE_AFTER_CELL_VALUE="   "
+export TABLE_EMPTY_CELL="?"
 
-LAMBDA="L"
-DELTA="D"
+export LAMBDA="L"
+export DELTA="D"
 
-CALCULATE_K_ITERATION_LIMIT=50
+export CALCULATE_K_ITERATION_LIMIT=50
 
-DO_NOT_PRINT_CLASS_FAMILY_ID=0
-DO_PRINT_CLASS_FAMILY_ID=1
+export DO_NOT_PRINT_CLASS_FAMILY_ID=0
+export DO_PRINT_CLASS_FAMILY_ID=1
 
 # Start main script of Automata Parser
 function automata_parser() {
@@ -208,17 +208,18 @@ function automata_parser() {
   # Calculate K
   # ----------------------------------------
   # Initialization values must be different here
-  local prev_K="0"
-  local current_K="1"
+  local class_family_previous="0"
+  local class_family_current="1"
   local class_family_id=0
-  local calculated_Ks=0
+  local class_families_count=0
+  local last_calculated_class_family_id=0
 
-  while [[ "${current_K}" != "${prev_K}" ]] && ((class_family_id < CALCULATE_K_ITERATION_LIMIT)); do
+  while [[ "${class_family_current}" != "${class_family_previous}" ]] && ((class_family_id < CALCULATE_K_ITERATION_LIMIT)); do
     print_info "Calculate K${class_family_id}..."
 
     # For Ks greater than 1 we need to calculate lines_to_find_K based on previous K
     if ((class_family_id > 1)); then
-      local familyOfClassesId_prev="$((class_family_id - 1))"
+      local class_family_id_previous="$((class_family_id - 1))"
 
       for ((ellipse_id_in_list = 0; ellipse_id_in_list < ellipses_count; ellipse_id_in_list++)); do
         local ellipse_value="${ellipses_values["${ellipse_id_in_list}"]}"
@@ -228,25 +229,25 @@ function automata_parser() {
           local current_delta="${cells["${DELTA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
 
           # Find cell value for previous K
-          local K_cell_value=""
+          local class_family_linked_cell_value=""
 
           local symbol_id
           for ((symbol_id = 0; symbol_id < CLASS_SYMBOLS_COUNT; symbol_id++)); do
-            local class_name="${CLASS_SYMBOLS["${symbol_id}"]}${familyOfClassesId_prev}"
-            local K_value="${K["${class_name}"]}"
+            local class_name="${CLASS_SYMBOLS["${symbol_id}"]}${class_family_id_previous}"
+            local class_family_linked_name="${CLASS_FAMILIES["${class_name}"]}"
 
-            if [ -z "${K_value}" ]; then
+            if [ -z "${class_family_linked_name}" ]; then
               continue
             fi
 
             # Add extra spaces to match first and last numbers in K_value
-            if [[ " ${K_value} " == *" ${current_delta} "* ]]; then
-              K_cell_value="${class_name}"
+            if [[ " ${class_family_linked_name} " == *" ${current_delta} "* ]]; then
+              class_family_linked_cell_value="${class_name}"
               break
             fi
           done
 
-          if [[ -z "${K_cell_value}" ]]; then
+          if [[ -z "${class_family_linked_cell_value}" ]]; then
             print_error "Calculation for ${CLASS_FAMILY_SYMBOL} cell value failed! class_name = \"${class_name}\""
             return 1
           fi
@@ -254,9 +255,9 @@ function automata_parser() {
           # DEBUG:
           # echo "current_delta: ${current_delta}; ellipse_value: ${ellipse_value}; variable_name_in_list: ${variable_name_in_list}; K_cell_value: ${K_cell_value}"
 
-          cells["K${familyOfClassesId_prev}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${K_cell_value}"
+          cells["${CLASS_FAMILY_SYMBOL}${class_family_id_previous}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${class_family_linked_cell_value}"
 
-          lines_to_find_K["${class_family_id}"]+=" ${K_cell_value:-"${TABLE_EMPTY_CELL}"}"
+          lines_to_find_K["${class_family_id}"]+=" ${class_family_linked_cell_value:-"${TABLE_EMPTY_CELL}"}"
         done
 
         # Make sure to not add extra line because we count them in class_family_calculate function
@@ -268,10 +269,11 @@ function automata_parser() {
     fi
 
     class_family_calculate "${ellipses_values_as_string}" "${lines_to_find_K["${class_family_id}"]}" "${class_family_id}" || return "$?"
-    ((calculated_Ks++))
+    last_calculated_class_family_id="$((class_families_count))"
+    ((class_families_count++))
 
-    prev_K="${current_K}"
-    current_K="$(class_family_print "${class_family_id}" "${DO_NOT_PRINT_CLASS_FAMILY_ID}")" || return "$?"
+    class_family_previous="${class_family_current}"
+    class_family_current="$(class_family_print "${class_family_id}" "${DO_NOT_PRINT_CLASS_FAMILY_ID}")" || return "$?"
 
     print_info "K${class_family_id} = $(class_family_print "${class_family_id}" "${DO_PRINT_CLASS_FAMILY_ID}")" || return "$?"
 
@@ -344,33 +346,31 @@ function automata_parser() {
   # Print K
   # ----------------------------------------
   echo ""
-  for ((class_family_id = 0; class_family_id < calculated_Ks; class_family_id++)); do
+  for ((class_family_id = 0; class_family_id < class_families_count; class_family_id++)); do
     echo -n "K${class_family_id} = "
     class_family_print "${class_family_id}" "${DO_PRINT_CLASS_FAMILY_ID}" || return "$?"
   done
   # ----------------------------------------
 
   if ((!was_error)); then
-    local last_calculated_familyOfClassesId="$((calculated_Ks - 1))"
-
-    echo "${CLASS_FAMILY_SYMBOL}${last_calculated_familyOfClassesId} == ${CLASS_FAMILY_SYMBOL}$((last_calculated_familyOfClassesId - 1)) == ${CLASS_FAMILY_SYMBOL}"
+    echo "${CLASS_FAMILY_SYMBOL}${last_calculated_class_family_id} == ${CLASS_FAMILY_SYMBOL}$((last_calculated_class_family_id - 1)) == ${CLASS_FAMILY_SYMBOL}"
 
     declare -a last_calculated_K_symbols=()
 
     local symbol_id
     for ((symbol_id = 0; symbol_id < CLASS_SYMBOLS_COUNT; symbol_id++)); do
       local symbol="${CLASS_SYMBOLS["${symbol_id}"]}"
-      local class_name="${symbol}${last_calculated_familyOfClassesId}"
-      local K_value="${K["${class_name}"]}"
+      local class_name="${symbol}${last_calculated_class_family_id}"
+      local class_family_linked_name="${CLASS_FAMILIES["${class_name}"]}"
 
-      if [ -z "${K_value}" ]; then
+      if [ -z "${class_family_linked_name}" ]; then
         continue
       fi
 
       last_calculated_K_symbols+=("${symbol}")
     done
 
-    if [[ -z "${K_cell_value}" ]]; then
+    if [[ -z "${class_family_linked_cell_value}" ]]; then
       print_error "Calculation for ${CLASS_FAMILY_SYMBOL} cell value failed!"
       return 1
     fi

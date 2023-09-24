@@ -42,7 +42,7 @@ function class_family_print() {
     local class_symbol="${CLASS_SYMBOLS["${class_symbol_id}"]}"
     local class_key="${class_symbol}${class_family_id}"
 
-    local class_value="${K["${class_key}"]}"
+    local class_value="${CLASS_FAMILIES["${class_key}"]}"
 
     if [ -z "${class_value}" ]; then
       continue
