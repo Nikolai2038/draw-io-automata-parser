@@ -1,7 +1,5 @@
 #!/bin/bash
 
-export SCRIPTS_VERSION="0.1.0"
-
 export ARRAY_INDEX_SEPARATOR="___"
 
 export CALCULATE_K_ITERATION_LIMIT=50
@@ -33,7 +31,7 @@ function automata_parser() {
   # 2. Arguments
   # ========================================
 
-  print_info "Automata Parser ${C_HIGHLIGHT}v.${SCRIPTS_VERSION}${C_RETURN}"
+  print_info "Welcome to ${C_HIGHLIGHT}Automata Parser${C_RETURN}!"
 
   local file_path="${1}" && shift
   if [ -z "${file_path}" ]; then
@@ -94,7 +92,7 @@ function automata_parser() {
   local class_family_current="1"
   local class_family_id=0
   local class_families_count=0
-  local last_calculated_class_family_id=0
+  export LAST_CALCULATED_CLASS_FAMILY_ID=0
 
   while [[ "${class_family_current}" != "${class_family_previous}" ]] && ((class_family_id < CALCULATE_K_ITERATION_LIMIT)); do
     print_info "Calculate ${C_HIGHLIGHT}${CLASS_FAMILY_SYMBOL}${class_family_id}${C_RETURN}..."
@@ -151,7 +149,7 @@ function automata_parser() {
     fi
 
     class_family_calculate "${ELLIPSES_VALUES_AS_STRING}" "${lines_to_find_family_class["${class_family_id}"]}" "${class_family_id}" || return "$?"
-    last_calculated_class_family_id="$((class_families_count))"
+    LAST_CALCULATED_CLASS_FAMILY_ID="$((class_families_count))"
     ((class_families_count++))
 
     class_family_previous="${class_family_current}"

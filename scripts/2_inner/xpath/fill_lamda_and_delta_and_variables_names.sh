@@ -16,9 +16,7 @@ function fill_lamda_and_delta_and_variables_names() {
 
   local source_previous_directory="${PWD}"
   cd "$(dirname "$(find "$(dirname "${0}")" -name "$(basename "${BASH_SOURCE[0]}")" | head -n 1)")" || return "$?"
-  # source "./scripts/..." || return "$?"
-  # source "./scripts/..." || return "$?"
-  # source "./scripts/..." || return "$?"
+  source "../../1_portable/messages.sh" || return "$?"
   cd "${source_previous_directory}" || return "$?"
 
   # ========================================

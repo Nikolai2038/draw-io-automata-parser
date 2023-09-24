@@ -20,6 +20,11 @@ export TABLE_HORIZONTAL_BORDER_SYMBOL="-"
 export LAMBDA="λ"
 export DELTA="δ"
 
+export SYMBOL_ELLIPSES_VALUES="S"
+export SYMBOL_START_ELLIPSE_VALUE="u0"
+
+export MIN="min"
+
 function print_calculations_result() {
   # ========================================
   # 1. Imports
@@ -138,81 +143,86 @@ function print_calculations_result() {
   # ----------------------------------------
 
   # ----------------------------------------
-  # Print table
+  # Calculate ellipses values of input automate
+  # ----------------------------------------
+  local input_automate_ellipses_values="${ELLIPSES_VALUES_AS_STRING//"
+"/", "}"
+  # ----------------------------------------
+
+  # ----------------------------------------
+  # Calculate start ellipse of input automate
+  # ----------------------------------------
+  local input_automate_start_ellipse_value
+  input_automate_start_ellipse_value="$(get_node_attribute_value "${START_ARROW_TARGET}" "${ATTRIBUTE_VALUE}")" || return "$?"
+  # ----------------------------------------
+
+  # ----------------------------------------
+  # Calculate ellipses values of result automate
+  # ----------------------------------------
+  local output_automate_ellipses_values="?"
+
+  if ((!was_error)); then
+    declare -a last_calculated_K_symbols=()
+
+    local symbol_id
+    for ((symbol_id = 0; symbol_id < CLASS_SYMBOLS_COUNT; symbol_id++)); do
+      local symbol="${CLASS_SYMBOLS["${symbol_id}"]}"
+      local class_name="${symbol}${LAST_CALCULATED_CLASS_FAMILY_ID}"
+      local class_family_linked_name="${CLASS_FAMILIES["${class_name}"]}"
+
+      if [ -z "${class_family_linked_name}" ]; then
+        break
+      fi
+
+      last_calculated_K_symbols+=("${symbol}")
+    done
+
+    output_automate_ellipses_values="${last_calculated_K_symbols[*]}"
+    output_automate_ellipses_values="${output_automate_ellipses_values//" "/", "}"
+  fi
+  # ----------------------------------------
+
+  # ----------------------------------------
+  # Calculate start ellipse of result automate
+  # ----------------------------------------
+  local output_automate_start_ellipse_value="?"
+
+  if ((!was_error)); then
+    # TODO: Calculate u0min
+    :
+  fi
+  # ----------------------------------------
+
+  # ----------------------------------------
+  # Print
   # ----------------------------------------
   echo "${BOLD_LINE}"
   echo "Result:"
   echo "${BOLD_LINE}"
-  echo "u0 = ${START_ARROW_TARGET_VALUE}"
+  echo "${SYMBOL_ELLIPSES_VALUES} = { ${input_automate_ellipses_values} }"
+  echo "${SYMBOL_START_ELLIPSE_VALUE} = ${input_automate_start_ellipse_value}"
   echo ""
   echo "${table_horizontal_border}"
   echo -e "${table_headers}"
   echo "${table_horizontal_border}"
   echo -e "${table_content}" | sort --unique
   echo "${table_horizontal_border}"
-  # ----------------------------------------
 
-  # ----------------------------------------
-  # Print K
-  # ----------------------------------------
+  # Print class families
   echo ""
   for ((class_family_id = 0; class_family_id < class_families_count; class_family_id++)); do
     echo -n "${CLASS_FAMILY_SYMBOL}${class_family_id} = "
     class_family_print "${class_family_id}" "${DO_PRINT_CLASS_FAMILY_ID}" || return "$?"
   done
-  # ----------------------------------------
-
   if ((!was_error)); then
-    echo "${CLASS_FAMILY_SYMBOL}${last_calculated_class_family_id} == ${CLASS_FAMILY_SYMBOL}$((last_calculated_class_family_id - 1)) == ${CLASS_FAMILY_SYMBOL}"
-
-    declare -a last_calculated_K_symbols=()
-
-    local symbol_id
-    for ((symbol_id = 0; symbol_id < CLASS_SYMBOLS_COUNT; symbol_id++)); do
-      local symbol="${CLASS_SYMBOLS["${symbol_id}"]}"
-      local class_name="${symbol}${last_calculated_class_family_id}"
-      local class_family_linked_name="${CLASS_FAMILIES["${class_name}"]}"
-
-      if [ -z "${class_family_linked_name}" ]; then
-        continue
-      fi
-
-      last_calculated_K_symbols+=("${symbol}")
-    done
-
-    if [[ -z "${class_family_linked_cell_value}" ]]; then
-      print_error "Calculation for ${CLASS_FAMILY_SYMBOL} cell value failed!"
-      return 1
-    fi
-
-    # ----------------------------------------
-    # Print Smin
-    # ----------------------------------------
-    echo ""
-    echo -n "Smin = {"
-
-    local is_first=1
-
-    local last_calculated_K_symbols_count="${#last_calculated_K_symbols[@]}"
-    for ((symbol_id = 0; symbol_id < last_calculated_K_symbols_count; symbol_id++)); do
-      local symbol="${last_calculated_K_symbols["${symbol_id}"]}"
-
-      if ((is_first)); then
-        is_first=0
-      else
-        echo -n ","
-      fi
-
-      echo -n " ${symbol}"
-    done
-
-    echo " }"
-    # ----------------------------------------
-
-    echo "u0min = ..."
+    echo "${CLASS_FAMILY_SYMBOL}${LAST_CALCULATED_CLASS_FAMILY_ID} == ${CLASS_FAMILY_SYMBOL}$((LAST_CALCULATED_CLASS_FAMILY_ID - 1)) == ${CLASS_FAMILY_SYMBOL}"
   fi
 
+  echo ""
+  echo "${SYMBOL_ELLIPSES_VALUES}${MIN} = { ${output_automate_ellipses_values} }"
+  echo "${SYMBOL_START_ELLIPSE_VALUE}${MIN} = ${output_automate_start_ellipse_value}"
   echo "${BOLD_LINE}"
+  # ----------------------------------------
 
   return 0
 }

@@ -11,7 +11,6 @@ export ATTRIBUTE_VALUE="value"
 
 export XML_ELLIPSES
 export ELLIPSES_COUNT
-export START_ARROW_TARGET_VALUE
 export CONNECTED_ARROWS_XML
 
 export ELLIPSES_VALUES_AS_STRING
@@ -141,11 +140,8 @@ function load_xml() {
   fi
 
   # Find first ellipsis node
-  local start_arrow_target
-  start_arrow_target="$(get_node_with_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_ID}" "${start_arrow_target_id}")" || return "$?"
-
-  # Find first ellipsis value
-  START_ARROW_TARGET_VALUE="$(get_node_attribute_value "${start_arrow_target}" "${ATTRIBUTE_VALUE}")" || return "$?"
+  export START_ARROW_TARGET
+  START_ARROW_TARGET="$(get_node_with_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_ID}" "${start_arrow_target_id}")" || return "$?"
   # ----------------------------------------
 
   # ----------------------------------------
