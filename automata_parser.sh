@@ -4,9 +4,6 @@ export SCRIPTS_VERSION="0.1.0"
 
 export ARRAY_INDEX_SEPARATOR="___"
 
-export LAMBDA="L"
-export DELTA="D"
-
 export CALCULATE_K_ITERATION_LIMIT=50
 
 # Format for element: `cells["<column header 1 name><separator><column header 2 name><separator><row header name>"]="<cell value>"`
@@ -75,7 +72,7 @@ function automata_parser() {
     for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
       local variable_name_in_list="${VARIABLES_NAMES["${variable_name_id_in_list}"]}"
       local current_lambda="${CELLS["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
-      lines_to_find_family_class["1"]+=" ${current_lambda:-"${TABLE_EMPTY_CELL}"}"
+      lines_to_find_family_class["1"]+=" ${current_lambda:-"${TABLE_EMPTY_CELL_VALUE}"}"
     done
 
     # Make sure to not add extra line because we count them in class_family_calculate function
@@ -142,7 +139,7 @@ function automata_parser() {
 
           CELLS["${CLASS_FAMILY_SYMBOL}${class_family_id_previous}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${class_family_linked_cell_value}"
 
-          lines_to_find_family_class["${class_family_id}"]+=" ${class_family_linked_cell_value:-"${TABLE_EMPTY_CELL}"}"
+          lines_to_find_family_class["${class_family_id}"]+=" ${class_family_linked_cell_value:-"${TABLE_EMPTY_CELL_VALUE}"}"
         done
 
         # Make sure to not add extra line because we count them in class_family_calculate function

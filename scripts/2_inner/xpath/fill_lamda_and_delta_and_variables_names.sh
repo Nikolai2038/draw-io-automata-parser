@@ -87,8 +87,8 @@ function fill_lamda_and_delta_and_variables_names() {
       # Collecting all variables names into "variables_names" array
       VARIABLES_NAMES+=("${arrow_variable_name}")
 
-      local current_lambda="${CELLS["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
-      if [ -n "${current_lambda}" ]; then
+      local cell_value="${CELLS["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
+      if [ -n "${cell_value}" ]; then
         print_error "From ellipse with value \"${ellipse_value}\" there are more than one arrows with variable name \"${arrow_variable_name}\"!"
         return 1
       fi

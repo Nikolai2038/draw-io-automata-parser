@@ -4,9 +4,21 @@ if [ -n "${IS_FILE_SOURCED_PRINT_CALCULATIONS_RESULT}" ]; then
   return
 fi
 
-export TABLE_BEFORE_CELL_VALUE="   "
-export TABLE_AFTER_CELL_VALUE="   "
-export TABLE_EMPTY_CELL="?"
+# Tab size when printing in terminal
+export TAB_SIZE=4
+tabs -${TAB_SIZE}
+
+export TABLE_BEFORE_CELL_VALUE="\t"
+export TABLE_AFTER_CELL_VALUE="\t"
+export TABLE_EMPTY_CELL_VALUE="?"
+export TABLE_EMPTY_CELL_HEADER=" "
+
+export BOLD_LINE="================================================================================"
+export BORDER_SYMBOL="|"
+export TABLE_HORIZONTAL_BORDER_SYMBOL="-"
+
+export LAMBDA="λ"
+export DELTA="δ"
 
 function print_calculations_result() {
   # ========================================
@@ -32,57 +44,113 @@ function print_calculations_result() {
   # ----------------------------------------
   # Creating table's headers
   # ----------------------------------------
-  local table_header_lambda=""
-  local table_header_delta=""
-  local table_header_variables=""
+
+  local headers_line_1_lambda_part=""
+  local headers_line_1_delta_part=""
+  local headers_line_1_class_family_part=""
+
+  local headers_line_2_variables_part=""
 
   local variable_name_id_in_list
   for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
-    table_header_lambda+="${TABLE_BEFORE_CELL_VALUE}${LAMBDA}${TABLE_AFTER_CELL_VALUE}|"
-    table_header_delta+="${TABLE_BEFORE_CELL_VALUE}${DELTA}${TABLE_AFTER_CELL_VALUE}|"
-
-    local variable_name_in_list="${VARIABLES_NAMES["${variable_name_id_in_list}"]}"
-    table_header_variables+="${TABLE_BEFORE_CELL_VALUE}${variable_name_in_list}${TABLE_AFTER_CELL_VALUE}|"
+    headers_line_1_lambda_part+="${TABLE_BEFORE_CELL_VALUE}${LAMBDA}${TABLE_AFTER_CELL_VALUE}${BORDER_SYMBOL}"
+    headers_line_1_delta_part+="${TABLE_BEFORE_CELL_VALUE}${DELTA}${TABLE_AFTER_CELL_VALUE}${BORDER_SYMBOL}"
   done
-  table_header_lambda+=""
 
-  local header=""
+  # For lambda and delta columns
+  local column_id
+  for ((column_id = 0; column_id < 2; column_id++)); do
+    for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
+      local variable_name_in_list="${VARIABLES_NAMES["${variable_name_id_in_list}"]}"
+      headers_line_2_variables_part+="${TABLE_BEFORE_CELL_VALUE}${variable_name_in_list}${TABLE_AFTER_CELL_VALUE}${BORDER_SYMBOL}"
+    done
+  done
 
-  header+="|${TABLE_BEFORE_CELL_VALUE} ${TABLE_AFTER_CELL_VALUE}|${table_header_lambda}${table_header_delta}\n"
-  header+="|${TABLE_BEFORE_CELL_VALUE} ${TABLE_AFTER_CELL_VALUE}|${table_header_variables}${table_header_variables}"
+  # Start from (K1) to (last K - 1) because (last K) and (last K - 1) are the same
+  for ((class_family_id = 1; class_family_id < class_families_count - 1; class_family_id++)); do
+    for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
+      headers_line_1_class_family_part+="${TABLE_BEFORE_CELL_VALUE}${CLASS_FAMILY_SYMBOL}${class_family_id}${TABLE_AFTER_CELL_VALUE}${BORDER_SYMBOL}"
+
+      local variable_name_in_list="${VARIABLES_NAMES["${variable_name_id_in_list}"]}"
+      headers_line_2_variables_part+="${TABLE_BEFORE_CELL_VALUE}${variable_name_in_list}${TABLE_AFTER_CELL_VALUE}${BORDER_SYMBOL}"
+    done
+  done
+
+  local headers_line_1="${BORDER_SYMBOL}${TABLE_BEFORE_CELL_VALUE}${TABLE_EMPTY_CELL_HEADER}${TABLE_AFTER_CELL_VALUE}${BORDER_SYMBOL}${headers_line_1_lambda_part}${headers_line_1_delta_part}${headers_line_1_class_family_part}"
+  local headers_line_2="${BORDER_SYMBOL}${TABLE_BEFORE_CELL_VALUE}${TABLE_EMPTY_CELL_HEADER}${TABLE_AFTER_CELL_VALUE}${BORDER_SYMBOL}${headers_line_2_variables_part}"
+
+  local table_headers="${headers_line_1}\n${headers_line_2}"
   # ----------------------------------------
 
-  echo "================================================================================"
-  echo "Result:"
-  echo "================================================================================"
-  echo "u0 = ${START_ARROW_TARGET_VALUE}"
+  # ----------------------------------------
+  # Horizontal border for table
+  # ----------------------------------------
+  local headers_line_1_with_spaces
+  headers_line_1_with_spaces="$(echo -e "${headers_line_1}" | expand -t ${TAB_SIZE})" || return "$?"
+  local table_width="${#headers_line_1_with_spaces}"
+  ((table_width += TAB_SIZE))
 
-  echo ""
-  echo -en "${header}"
+  local table_horizontal_border=""
+  local symbol_id
+  for ((symbol_id = 0; symbol_id < table_width; symbol_id++)); do
+    table_horizontal_border+="${TABLE_HORIZONTAL_BORDER_SYMBOL}"
+  done
+  # ----------------------------------------
 
-  local result
+  # ----------------------------------------
+  # Table content
+  # ----------------------------------------
+  local table_content=""
 
   for ((ellipse_id_in_list = 0; ellipse_id_in_list < ELLIPSES_COUNT; ellipse_id_in_list++)); do
     local ellipse_value="${ELLIPSES_VALUES["${ellipse_id_in_list}"]}"
 
-    result+="|${TABLE_BEFORE_CELL_VALUE}${ellipse_value}${TABLE_AFTER_CELL_VALUE}"
+    table_content+="${BORDER_SYMBOL}${TABLE_BEFORE_CELL_VALUE}${ellipse_value}${TABLE_AFTER_CELL_VALUE}"
 
     for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
       local variable_name_in_list="${VARIABLES_NAMES["${variable_name_id_in_list}"]}"
-      local current_lambda="${CELLS["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
-      result+="|${TABLE_BEFORE_CELL_VALUE}${current_lambda:-"${TABLE_EMPTY_CELL}"}${TABLE_AFTER_CELL_VALUE}"
+      local cell_value="${CELLS["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
+      table_content+="${BORDER_SYMBOL}${TABLE_BEFORE_CELL_VALUE}${cell_value:-"${TABLE_EMPTY_CELL_VALUE}"}${TABLE_AFTER_CELL_VALUE}"
     done
 
     for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
       local variable_name_in_list="${VARIABLES_NAMES["${variable_name_id_in_list}"]}"
-      local current_delta="${CELLS["${DELTA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
-      result+="|${TABLE_BEFORE_CELL_VALUE}${current_delta:-"${TABLE_EMPTY_CELL}"}${TABLE_AFTER_CELL_VALUE}"
+      local cell_value="${CELLS["${DELTA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
+      table_content+="${BORDER_SYMBOL}${TABLE_BEFORE_CELL_VALUE}${cell_value:-"${TABLE_EMPTY_CELL_VALUE}"}${TABLE_AFTER_CELL_VALUE}"
     done
 
-    result+="|\n"
+    # Start from (K1) to (last K - 1) because (last K) and (last K - 1) are the same
+    for ((class_family_id = 1; class_family_id < class_families_count - 1; class_family_id++)); do
+      for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
+        local variable_name_in_list="${VARIABLES_NAMES["${variable_name_id_in_list}"]}"
+        local cell_value="${CELLS["${CLASS_FAMILY_SYMBOL}${class_family_id}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
+        table_content+="${BORDER_SYMBOL}${TABLE_BEFORE_CELL_VALUE}${cell_value:-"${TABLE_EMPTY_CELL_VALUE}"}${TABLE_AFTER_CELL_VALUE}"
+      done
+    done
+
+    table_content+="${BORDER_SYMBOL}"
+
+    # Make sure last line is not line break because `sort` later will move it to the top
+    if ((ellipse_id_in_list != ELLIPSES_COUNT - 1)); then
+      table_content+="\n"
+    fi
   done
+  # ----------------------------------------
 
-  echo -e "${result}" | sort --unique
+  # ----------------------------------------
+  # Print table
+  # ----------------------------------------
+  echo "${BOLD_LINE}"
+  echo "Result:"
+  echo "${BOLD_LINE}"
+  echo "u0 = ${START_ARROW_TARGET_VALUE}"
+  echo ""
+  echo "${table_horizontal_border}"
+  echo -e "${table_headers}"
+  echo "${table_horizontal_border}"
+  echo -e "${table_content}" | sort --unique
+  echo "${table_horizontal_border}"
+  # ----------------------------------------
 
   # ----------------------------------------
   # Print K
@@ -144,7 +212,7 @@ function print_calculations_result() {
     echo "u0min = ..."
   fi
 
-  echo "================================================================================"
+  echo "${BOLD_LINE}"
 
   return 0
 }
