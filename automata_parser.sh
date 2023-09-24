@@ -8,6 +8,9 @@ export CALCULATE_K_ITERATION_LIMIT=50
 export CELLS
 declare -A CELLS=()
 
+export LAST_CLASS_FAMILY_SYMBOLS
+declare -a LAST_CLASS_FAMILY_SYMBOLS=()
+
 # Start main script of Automata Parser
 function automata_parser() {
   # ========================================
@@ -115,14 +118,14 @@ function automata_parser() {
           local symbol_id
           for ((symbol_id = 0; symbol_id < CLASS_SYMBOLS_COUNT; symbol_id++)); do
             local class_name="${CLASS_SYMBOLS["${symbol_id}"]}${class_family_id_previous}"
-            local class_family_linked_name="${CLASS_FAMILIES["${class_name}"]}"
+            local class_members_as_string="${CLASS_FAMILIES["${class_name}"]}"
 
-            if [ -z "${class_family_linked_name}" ]; then
+            if [ -z "${class_members_as_string}" ]; then
               continue
             fi
 
-            # Add extra spaces to match first and last numbers in class_family_linked_name
-            if [[ " ${class_family_linked_name} " == *" ${current_delta} "* ]]; then
+            # Add extra spaces to match first and last numbers in class_members_as_string
+            if [[ " ${class_members_as_string} " == *" ${current_delta} "* ]]; then
               class_family_linked_cell_value="${class_name}"
               break
             fi
@@ -185,29 +188,27 @@ function automata_parser() {
   # ----------------------------------------
   # Calculate ellipses values of result automate
   # ----------------------------------------
-  declare -a last_class_family_symbols=()
-
   if ((!was_error)); then
     local symbol_id
     for ((symbol_id = 0; symbol_id < CLASS_SYMBOLS_COUNT; symbol_id++)); do
-      local symbol="${CLASS_SYMBOLS["${symbol_id}"]}"
-      local class_name="${symbol}${LAST_CALCULATED_CLASS_FAMILY_ID}"
-      local class_family_linked_name="${CLASS_FAMILIES["${class_name}"]}"
+      local ellipse_value="${CLASS_SYMBOLS["${symbol_id}"]}"
+      local class_name="${ellipse_value}${LAST_CALCULATED_CLASS_FAMILY_ID}"
+      local class_members_as_string="${CLASS_FAMILIES["${class_name}"]}"
 
-      if [ -z "${class_family_linked_name}" ]; then
+      if [ -z "${class_members_as_string}" ]; then
         break
       fi
 
-      last_class_family_symbols+=("${symbol}")
+      LAST_CLASS_FAMILY_SYMBOLS+=("${ellipse_value}")
     done
   fi
 
-  local last_class_family_symbols_count="${#last_class_family_symbols[@]}"
+  export LAST_CLASS_FAMILY_SYMBOLS_COUNT="${#LAST_CLASS_FAMILY_SYMBOLS[@]}"
 
   export OUTPUT_AUTOMATE_ELLIPSES_VALUES="?"
 
   if ((!was_error)); then
-    OUTPUT_AUTOMATE_ELLIPSES_VALUES="${last_class_family_symbols[*]}"
+    OUTPUT_AUTOMATE_ELLIPSES_VALUES="${LAST_CLASS_FAMILY_SYMBOLS[*]}"
     OUTPUT_AUTOMATE_ELLIPSES_VALUES="${OUTPUT_AUTOMATE_ELLIPSES_VALUES//" "/", "}"
   fi
   # ----------------------------------------
@@ -219,18 +220,52 @@ function automata_parser() {
 
   if ((!was_error)); then
     local symbol_id
-    for ((symbol_id = 0; symbol_id < last_class_family_symbols_count; symbol_id++)); do
-      local symbol="${last_class_family_symbols["${symbol_id}"]}"
-      local class_name="${symbol}${LAST_CALCULATED_CLASS_FAMILY_ID}"
-      local class_family_linked_name="${CLASS_FAMILIES["${class_name}"]}"
+    for ((symbol_id = 0; symbol_id < LAST_CLASS_FAMILY_SYMBOLS_COUNT; symbol_id++)); do
+      local ellipse_value="${LAST_CLASS_FAMILY_SYMBOLS["${symbol_id}"]}"
+      local class_name="${ellipse_value}${LAST_CALCULATED_CLASS_FAMILY_ID}"
+      local class_members_as_string="${CLASS_FAMILIES["${class_name}"]}"
 
-      # Add extra spaces to match first and last numbers in class_family_linked_name
-      if [[ " ${class_family_linked_name} " == *" ${INPUT_AUTOMATE_START_ELLIPSE_VALUE} "* ]]; then
-        OUTPUT_AUTOMATE_START_ELLIPSE_VALUE="${symbol}"
+      # Add extra spaces to match first and last numbers in class_members_as_string
+      if [[ " ${class_members_as_string} " == *" ${INPUT_AUTOMATE_START_ELLIPSE_VALUE} "* ]]; then
+        OUTPUT_AUTOMATE_START_ELLIPSE_VALUE="${ellipse_value}"
         break
       fi
     done
   fi
+  # ----------------------------------------
+
+  # ----------------------------------------
+  # Calculate result automate
+  # ----------------------------------------
+  local symbol_id
+  for ((symbol_id = 0; symbol_id < LAST_CLASS_FAMILY_SYMBOLS_COUNT; symbol_id++)); do
+    local ellipse_value="${LAST_CLASS_FAMILY_SYMBOLS["${symbol_id}"]}"
+    local class_name="${ellipse_value}${LAST_CALCULATED_CLASS_FAMILY_ID}"
+    local class_members_as_string="${CLASS_FAMILIES["${class_name}"]}"
+
+    # shellcheck disable=SC2206
+    declare -a class_members=(${class_members_as_string})
+
+    local any_member="${class_members["0"]}"
+
+    # lambda
+    for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
+      local variable_name_in_list="${VARIABLES_NAMES["${variable_name_id_in_list}"]}"
+
+      CELLS["${LAMBDA_MIN}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${CELLS["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${any_member}"]}"
+    done
+
+    # delta
+    for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
+      local variable_name_in_list="${VARIABLES_NAMES["${variable_name_id_in_list}"]}"
+
+      local delta_value="${CELLS["${CLASS_FAMILY_SYMBOL}$((LAST_CALCULATED_CLASS_FAMILY_ID - 1))${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${any_member}"]}"
+      # Remove index
+      delta_value="${delta_value//"$((LAST_CALCULATED_CLASS_FAMILY_ID - 1))"/""}"
+
+      CELLS["${DELTA_MIN}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]="${delta_value}"
+    done
+  done
   # ----------------------------------------
 
   print_calculations_result "${was_error}" || return "$?"
