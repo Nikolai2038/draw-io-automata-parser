@@ -47,6 +47,8 @@ function automata_parser() {
   # 3. Main code
   # ========================================
 
+  install_command "xpath" "libxml-xpath-perl" || return "$?"
+
   load_xml "${file_path}" || return "$?"
 
   print_info "Parsing..."
