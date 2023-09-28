@@ -1,55 +1,55 @@
 # Draw IO Automata Parser
 
-**EN** | [RU](README_RU.md)
+[EN](README.md) | **RU**
 
-## Description
+## Описание
 
-This Bash-script allows you to find minimal automata for the represented one in diagram file `*.drawio`.
+Данный Bash-скрипт позволяет найти минимальный автомат из автомата, нарисованного на диаграмме в файле `*.drawio`.
 
-## Requirements
+## Требования
 
-- Linux or WSL;
+- Linux или WSL;
 - Bash;
-- `libxml-xpath-perl` apt-package installed (it will be installed automatically, if not already installed).
+- `libxml-xpath-perl` apt-пакет (он будет установлен автоматически, если ещё не установлен).
 
-## Usage
+## Использование
 
-1. Clone the repository inside Linux machine or WSL.
+1. Склонировать репозиторий:
 
-2. Create and save Draw IO diagram (look to example below).
-   Rules:
+2. Создать и сохранить диаграмму Draw IO (смотреть пример ниже).
+   Правила:
 
-   - Use ellipses for automata nodes;
-   - You must create one and only one arrow without source;
-   - All other arrows must have source and target (connect them to ellipses);
-   - Add text to all arrows (except start arrow) with format `<variable name>/<variable value>`;
+   - Использовать эллипсы для узлов автомата;
+   - Обязательно должна быть одна и только одна стрелка без начала;
+   - Все остальные стрелки должны иметь начало и конец (соединяют эллипсы);
+   - У всех стрелок (кроме начальной) должен быть текст формата `<название переменной>/<значение переменной>`;
 
-3. Run main script:
+3. Выполнить сам скрипт:
 
     ```bash
-    ./automata_parser.sh <file path>
+    ./automata_parser.sh <путь к файлу>
     ```
 
-If you're having trouble with diagram created by yourself, try copying example diagram and modifying it instead.
+Если у Вас возникают проблемы создания диаграммы с нуля, попробуйте скопировать файл примера и изменить его под себя.
 
-## Example
+## Пример
 
-1. Create diagram:
+1. Создадим диаграмму:
 
-   ![Input diagram](images/1_input_diagram.svg)
+   ![Исходная диаграмма](images/1_input_diagram.svg)
 
-2. Save diagram as `XML file (.drawio)` (very important to save in XML because file will be parsed that way).
-   You can find this example in `./diagrams/examples` folder - file is called `0001_example_input.drawio`.
+2. Сохраним диаграмму как `XML-файл (.drawio)` (очень важно сохранить именно в XML, потому что файл будет парсится именно по формату XML).
+   Вы можете найти этот пример в директории `./diagrams/examples` - файл называется `0001_example_input.drawio`.
 
-3. Move file into `./diagrams` folder.
+3. Переместим файл в директорию `./diagrams`.
 
-4. Run script:
+4. Выполним сам скрипт:
 
    ```bash
    ./automata_parser.sh ./diagrams/0001_example_input.drawio
    ```
 
-5. Wait for calculations and done! The result will be printed in the console:
+5. Подождём, пока вычисления завершатся и всё! Результат будет выведен в консоль:
 
    ```log
    Welcome to Automata Parser!
@@ -128,10 +128,10 @@ If you're having trouble with diagram created by yourself, try copying example d
    Parsing: done!
    ```
 
-6. **[By hand]** Based on output, we can now draw minimal automata:
+6. **[Вручную]** Основываясь на полученном результате, мы теперь можем нарисовать минимальный автомат:
 
-   ![Result diagram](images/2_result_diagram.svg)
+   ![Итоговая диаграмма](images/2_result_diagram.svg)
 
-## Contribution
+## Развитие
 
-Feel free to contribute via [pull requests](https://github.com/Nikolai2038/draw-io-automata-parser/pulls) or [issues](https://github.com/Nikolai2038/draw-io-automata-parser/issues)!
+Не стесняйтесь участвовать в развитии репозитория, используя [pull requests](https://github.com/Nikolai2038/draw-io-automata-parser/pulls) или [issues](https://github.com/Nikolai2038/draw-io-automata-parser/issues)!
