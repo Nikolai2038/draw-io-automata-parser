@@ -157,6 +157,9 @@ function load_xml() {
   # Find first ellipsis node
   export START_ARROW_TARGET
   START_ARROW_TARGET="$(get_node_with_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_ID}" "${start_arrow_target_id}")" || return "$?"
+
+  export START_ARROW_TARGET_VALUE
+  START_ARROW_TARGET_VALUE="$(get_node_attribute_value "${START_ARROW_TARGET}" "${ATTRIBUTE_VALUE}")" || return "$?"
   # ----------------------------------------
 
   # ----------------------------------------

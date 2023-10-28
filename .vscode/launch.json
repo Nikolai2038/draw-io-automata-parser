@@ -8,7 +8,7 @@
             "name": "Bash-Debug",
             "program": "${file}",
             "args": [
-                "./diagrams/examples/0001_example_input.drawio"
+                "./diagrams/examples/01_example_input.drawio"
             ]
         }
     ]

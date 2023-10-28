@@ -27,7 +27,7 @@
 3. Выполнить сам скрипт:
 
     ```bash
-    ./automata_parser.sh <путь к файлу>
+    ./01_find_minimal.sh <путь к файлу>
     ```
 
 Если у Вас возникают проблемы создания диаграммы с нуля, попробуйте скопировать файл примера и изменить его под себя.
@@ -36,31 +36,32 @@
 
 1. Создадим диаграмму:
 
-   ![Исходная диаграмма](images/1_input_diagram.svg)
+   ![Исходная диаграмма](images/01_input_diagram.svg)
 
 2. Сохраним диаграмму как `XML-файл (.drawio)` (очень важно сохранить именно в XML, потому что файл будет парсится именно по формату XML).
-   Вы можете найти этот пример в директории `./diagrams/examples` - файл называется `0001_example_input.drawio`.
+   Вы можете найти этот пример в директории `./diagrams/examples` - файл называется `01_example_input.drawio`.
 
 3. Переместим файл в директорию `./diagrams`.
 
 4. Выполним сам скрипт:
 
    ```bash
-   ./automata_parser.sh ./diagrams/examples/0001_example_input.drawio
+   ./01_find_minimal.sh ./diagrams/examples/01_example_input.drawio
    ```
 
 5. Подождём, пока вычисления завершатся и всё! Результат будет выведен в консоль:
 
    ```log
    Welcome to Automata Parser!
-   Loading file ./diagrams/0001-example.drawio...
+   Loading file ./diagrams/01_example_input.drawio...
    Found 21 elements!
    Found 6 ellipses!
    Found 13 arrows!
+   Found 0 label arrows!
    Start arrow found!
    No disconnected arrows found!
    Found 12 connected arrows!
-   Loading file ./diagrams/0001-example.drawio: done!
+   Loading file ./diagrams/01_example_input.drawio: done!
    Parsing...
    Calculate data for ellipse with value 1!
    - Calculate data for arrow with value b/1!
@@ -130,7 +131,7 @@
 
 6. **[Вручную]** Основываясь на полученном результате, мы теперь можем нарисовать минимальный автомат:
 
-   ![Итоговая диаграмма](images/2_result_diagram.svg)
+   ![Итоговая диаграмма](images/01_result_diagram.svg)
 
 ## Развитие
 

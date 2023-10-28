@@ -27,7 +27,7 @@ This Bash-script allows you to find minimal automata for the represented one in 
 3. Run main script:
 
     ```bash
-    ./automata_parser.sh <file path>
+    ./01_find_minimal.sh <file path>
     ```
 
 If you're having trouble with diagram created by yourself, try copying example diagram and modifying it instead.
@@ -36,31 +36,32 @@ If you're having trouble with diagram created by yourself, try copying example d
 
 1. Create diagram:
 
-   ![Input diagram](images/1_input_diagram.svg)
+   ![Input diagram](images/01_input_diagram.svg)
 
 2. Save diagram as `XML file (.drawio)` (very important to save in XML because file will be parsed that way).
-   You can find this example in `./diagrams/examples` folder - file is called `0001_example_input.drawio`.
+   You can find this example in `./diagrams/examples` folder - file is called `01_example_input.drawio`.
 
 3. Move file into `./diagrams` folder.
 
 4. Run script:
 
    ```bash
-   ./automata_parser.sh ./diagrams/examples/0001_example_input.drawio
+   ./01_find_minimal.sh ./diagrams/examples/01_example_input.drawio
    ```
 
 5. Wait for calculations and done! The result will be printed in the console:
 
    ```log
    Welcome to Automata Parser!
-   Loading file ./diagrams/0001-example.drawio...
+   Loading file ./diagrams/01_example_input.drawio...
    Found 21 elements!
    Found 6 ellipses!
    Found 13 arrows!
+   Found 0 label arrows!
    Start arrow found!
    No disconnected arrows found!
    Found 12 connected arrows!
-   Loading file ./diagrams/0001-example.drawio: done!
+   Loading file ./diagrams/01_example_input.drawio: done!
    Parsing...
    Calculate data for ellipse with value 1!
    - Calculate data for arrow with value b/1!
@@ -130,7 +131,7 @@ If you're having trouble with diagram created by yourself, try copying example d
 
 6. **[By hand]** Based on output, we can now draw minimal automata:
 
-   ![Result diagram](images/2_result_diagram.svg)
+   ![Result diagram](images/01_result_diagram.svg)
 
 ## Contribution
 
