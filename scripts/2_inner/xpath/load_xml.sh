@@ -8,6 +8,7 @@ export ATTRIBUTE_ID="id"
 export ATTRIBUTE_TARGET="target"
 export ATTRIBUTE_SOURCE="source"
 export ATTRIBUTE_VALUE="value"
+export ATTRIBUTE_PARENT="parent"
 
 export XML_ELLIPSES
 export ELLIPSES_COUNT
@@ -103,6 +104,20 @@ function load_xml() {
     return 1
   fi
   print_success "Found ${C_HIGHLIGHT}${arrows_count}${C_RETURN} arrows!"
+  # ----------------------------------------
+
+  # ----------------------------------------
+  # Arrows labels
+  # ----------------------------------------
+  export arrows_labels_xml
+  arrows_labels_xml="$(echo "<xml>${xml_elements}</xml>" | xpath -q -e "
+    //mxCell[
+      starts-with(@style, \"edgeLabel\")
+    ]
+  ")" || return "$?"
+  local arrows_labels_count
+  arrows_labels_count="$(get_nodes_count "${arrows_labels_xml}")" || return "$?"
+  print_success "Found ${C_HIGHLIGHT}${arrows_labels_count}${C_RETURN} label arrows!"
   # ----------------------------------------
 
   # ----------------------------------------

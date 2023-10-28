@@ -43,12 +43,19 @@ function fill_lamda_and_delta_and_variables_names() {
       continue
     fi
 
-    local arrow_values_as_string
-    arrow_values_as_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_VALUE}")"
-    if [ -z "${arrow_values_as_string}" ]; then
-      print_error "Arrow values as string is empty!"
+    local arrow_ids_as_string
+    arrow_ids_as_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_ID}")" || return "$?"
+    if [ -z "${arrow_ids_as_string}" ]; then
+      print_error "Arrow ids as string is empty!" || return "$?"
       return 1
     fi
+    declare -a arrow_ids
+    mapfile -t arrow_ids <<<"${arrow_ids_as_string}" || return "$?"
+
+    # Arrows values can be specified in arrow itself, or in separate label.
+    # We check first arrow value, and if it is empty, we seek for its label.
+    local arrow_values_as_string
+    arrow_values_as_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_VALUE}")"
     declare -a arrow_values
     mapfile -t arrow_values <<<"${arrow_values_as_string}" || return "$?"
 
@@ -60,6 +67,22 @@ function fill_lamda_and_delta_and_variables_names() {
     local arrow_id_in_list
     for ((arrow_id_in_list = 0; arrow_id_in_list < arrows_from_ellipse_count; arrow_id_in_list++)); do
       local arrow_value="${arrow_values["${arrow_id_in_list}"]}"
+
+      # If arrow value is empty, we seek for its label.
+      if [ -z "${arrow_value}" ]; then
+        local arrow_id="${arrow_ids["${arrow_id_in_list}"]}"
+
+        local arrow_label_xml
+        arrow_label_xml="$(get_node_with_attribute_value "${arrows_labels_xml}" "${ATTRIBUTE_PARENT}" "${arrow_id}")" || return "$?"
+
+        local arrow_value
+        arrow_value="$(get_node_attribute_value "${arrow_label_xml}" "${ATTRIBUTE_VALUE}")" || return "$?"
+      fi
+
+      if [ -z "${arrow_value}" ]; then
+        print_error "Value is empty for arrow from ellipse with value \"${ellipse_value}\"! You must add text to arrow in format \"<variable name>/<variable value>\"" || return "$?"
+        return 1
+      fi
 
       print_info "- Calculate data for arrow with value ${C_HIGHLIGHT}${arrow_value}${C_RETURN}!"
 
@@ -78,7 +101,7 @@ function fill_lamda_and_delta_and_variables_names() {
       arrow_variable_value="$(echo "${arrow_value}" | sed -En "s/${arrow_variable_regexpr}/\2/p")" || return "$?"
 
       if [ -z "${arrow_variable_name}" ] || [ -z "${arrow_variable_value}" ]; then
-        print_error "Failed to get variable name and value from arrow with value \"${arrow_value}\" from ellipse with value \"${ellipse_value}\"! You must add text to arrow in format \"<variable name>/<variable value>\""
+        print_error "Failed to get variable name and value from arrow with value \"${arrow_value}\" from ellipse with value \"${ellipse_value}\"! You must add text to arrow in format \"<variable name>/<variable value>\"" || return "$?"
         return 1
       fi
 
@@ -87,7 +110,7 @@ function fill_lamda_and_delta_and_variables_names() {
 
       local cell_value="${CELLS["${LAMBDA}${ARRAY_INDEX_SEPARATOR}${arrow_variable_name}${ARRAY_INDEX_SEPARATOR}${ellipse_value}"]}"
       if [ -n "${cell_value}" ]; then
-        print_error "From ellipse with value \"${ellipse_value}\" there are more than one arrows with variable name \"${arrow_variable_name}\"!"
+        print_error "From ellipse with value \"${ellipse_value}\" there are more than one arrows with variable name \"${arrow_variable_name}\"!" || return "$?"
         return 1
       fi
 
