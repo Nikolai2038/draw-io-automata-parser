@@ -46,7 +46,7 @@
 4. Выполним сам скрипт:
 
    ```bash
-   ./automata_parser.sh ./diagrams/0001_example_input.drawio
+   ./automata_parser.sh ./diagrams/examples/0001_example_input.drawio
    ```
 
 5. Подождём, пока вычисления завершатся и всё! Результат будет выведен в консоль:

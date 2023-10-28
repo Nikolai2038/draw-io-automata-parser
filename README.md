@@ -46,7 +46,7 @@ If you're having trouble with diagram created by yourself, try copying example d
 4. Run script:
 
    ```bash
-   ./automata_parser.sh ./diagrams/0001_example_input.drawio
+   ./automata_parser.sh ./diagrams/examples/0001_example_input.drawio
    ```
 
 5. Wait for calculations and done! The result will be printed in the console:
