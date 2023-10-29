@@ -86,6 +86,10 @@ function print_result_for_script_2() {
   local variable_name_id_in_list
   for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
     local variable_name_in_list="${VARIABLES_NAMES["${variable_name_id_in_list}"]}"
+    if [ "${variable_name_in_list}" == "${SINGLE_ARROW_REPLACEMENT}" ]; then
+      variable_name_in_list="${SINGLE_ARROW}"
+    fi
+
     echo -en "\t${variable_name_in_list}"
   done
   echo ""
