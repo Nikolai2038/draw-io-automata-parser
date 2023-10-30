@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# ========================================
+# Source this file only if wasn't sourced already
+# ========================================
+CURRENT_FILE_HASH="$(realpath "${BASH_SOURCE[0]}" | sha256sum | cut -d ' ' -f 1)" || exit "$?"
+if [ -n "${SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]}" ]; then
+  return
+fi
+SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]=1
+# ========================================
+
 export ARRAY_INDEX_SEPARATOR="___"
 
 # Format for element: `cells["<column header 1 name><separator><column header 2 name><separator><row header name>"]="<cell value>"`
@@ -64,7 +74,10 @@ function automata_parser() {
   return "${was_error}"
 }
 
-# If script is not sourced - we execute it
+# ========================================
+# Add ability to execute script by itself (for debugging)
+# ========================================
 if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
   automata_parser "$@" || exit "$?"
 fi
+# ========================================

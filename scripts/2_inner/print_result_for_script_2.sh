@@ -1,8 +1,14 @@
 #!/bin/bash
 
-if [ -n "${IS_FILE_SOURCED_PRINT_RESULT_FOR_SCRIPT_2}" ]; then
+# ========================================
+# Source this file only if wasn't sourced already
+# ========================================
+CURRENT_FILE_HASH="$(realpath "${BASH_SOURCE[0]}" | sha256sum | cut -d ' ' -f 1)" || exit "$?"
+if [ -n "${SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]}" ]; then
   return
 fi
+SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]=1
+# ========================================
 
 export EMPTY_SPACE_SYMBOL="∅"
 
@@ -34,12 +40,12 @@ function find_next_ellipses_for_variable_name() {
     fi
 
     declare -a next_ellipses_array
-    IFS=" " read -r -a next_ellipses_array <<<"${value}"
+    IFS=" " read -r -a next_ellipses_array <<< "${value}"
 
     # Sort values
     local next_ellipses_array_sorted
     next_ellipses_array_sorted="$(echo "${next_ellipses_array[@]}" | tr ' ' '\n' | sort --unique --numeric-sort)" || return "$?"
-    mapfile -t next_ellipses_array <<<"${next_ellipses_array_sorted}" || return "$?"
+    mapfile -t next_ellipses_array <<< "${next_ellipses_array_sorted}" || return "$?"
 
     if ((!is_first)); then
       result+=" "
@@ -51,7 +57,7 @@ function find_next_ellipses_for_variable_name() {
   # Sort values
   local result_sorted
   result_sorted="$(echo "${result}" | tr ' ' '\n' | sort --unique --numeric-sort)" || return "$?"
-  mapfile -t result <<<"${result_sorted}" || return "$?"
+  mapfile -t result <<< "${result_sorted}" || return "$?"
 
   echo "${result[@]}"
 
@@ -98,7 +104,7 @@ function print_result_for_script_2() {
   for ((combination_id = 0; combination_id < combinations_count; combination_id++)); do
     local combination_as_string="${combinations["${combination_id}"]}"
     declare -a combination
-    IFS=" " read -r -a combination <<<"${combination_as_string}"
+    IFS=" " read -r -a combination <<< "${combination_as_string}"
 
     local combination_as_string_with_braces
     combination_as_string_with_braces="{$(print_with_delimiter "," "${combination_as_string:-"${EMPTY_SPACE_SYMBOL}"}")}" || return "$?"
@@ -137,9 +143,10 @@ function print_result_for_script_2() {
   return 0
 }
 
-# If script is not sourced - we execute it
+# ========================================
+# Add ability to execute script by itself (for debugging)
+# ========================================
 if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
-  template "$@" || exit "$?"
+  print_result_for_script_2 "$@" || exit "$?"
 fi
-
-export IS_FILE_SOURCED_PRINT_RESULT_FOR_SCRIPT_2=1
+# ========================================

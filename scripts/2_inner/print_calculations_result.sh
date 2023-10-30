@@ -1,8 +1,14 @@
 #!/bin/bash
 
-if [ -n "${IS_FILE_SOURCED_PRINT_CALCULATIONS_RESULT}" ]; then
+# ========================================
+# Source this file only if wasn't sourced already
+# ========================================
+CURRENT_FILE_HASH="$(realpath "${BASH_SOURCE[0]}" | sha256sum | cut -d ' ' -f 1)" || exit "$?"
+if [ -n "${SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]}" ]; then
   return
 fi
+SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]=1
+# ========================================
 
 # Tab size when printing in terminal
 export TAB_SIZE=7
@@ -243,9 +249,10 @@ function print_calculations_result() {
   return 0
 }
 
-# If script is not sourced - we execute it
+# ========================================
+# Add ability to execute script by itself (for debugging)
+# ========================================
 if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
   print_calculations_result "$@" || exit "$?"
 fi
-
-export IS_FILE_SOURCED_PRINT_CALCULATIONS_RESULT=1
+# ========================================

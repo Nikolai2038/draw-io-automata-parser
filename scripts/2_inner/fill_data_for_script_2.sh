@@ -1,8 +1,14 @@
 #!/bin/bash
 
-if [ -n "${IS_FILE_SOURCED_FILL_DATA_FOR_SCRIPT_2}" ]; then
+# ========================================
+# Source this file only if wasn't sourced already
+# ========================================
+CURRENT_FILE_HASH="$(realpath "${BASH_SOURCE[0]}" | sha256sum | cut -d ' ' -f 1)" || exit "$?"
+if [ -n "${SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]}" ]; then
   return
 fi
+SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]=1
+# ========================================
 
 export VARIABLES_NAMES
 declare -a VARIABLES_NAMES=()
@@ -60,19 +66,19 @@ function fill_data_for_script_2() {
       return 1
     fi
     declare -a arrow_ids
-    mapfile -t arrow_ids <<<"${arrow_ids_as_string}" || return "$?"
+    mapfile -t arrow_ids <<< "${arrow_ids_as_string}" || return "$?"
 
     # Arrows values can be specified in arrow itself, or in separate label.
     # We check first arrow value, and if it is empty, we seek for its label.
     local arrow_values_as_string
     arrow_values_as_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_VALUE}")"
     declare -a arrow_values
-    mapfile -t arrow_values <<<"${arrow_values_as_string}" || return "$?"
+    mapfile -t arrow_values <<< "${arrow_values_as_string}" || return "$?"
 
     local arrow_targets_ids_string
     arrow_targets_ids_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_TARGET}")"
     declare -a arrow_targets_ids
-    mapfile -t arrow_targets_ids <<<"${arrow_targets_ids_string}" || return "$?"
+    mapfile -t arrow_targets_ids <<< "${arrow_targets_ids_string}" || return "$?"
 
     local arrow_id_in_list
     for ((arrow_id_in_list = 0; arrow_id_in_list < arrows_from_ellipse_count; arrow_id_in_list++)); do
@@ -120,15 +126,16 @@ function fill_data_for_script_2() {
   # Sort variables names
   local variables_names_string_sorted
   variables_names_string_sorted="$(echo "${VARIABLES_NAMES[@]}" | tr ' ' '\n' | sort --unique)" || return "$?"
-  mapfile -t VARIABLES_NAMES <<<"${variables_names_string_sorted}" || return "$?"
+  mapfile -t VARIABLES_NAMES <<< "${variables_names_string_sorted}" || return "$?"
   VARIABLES_NAME_COUNT="${#VARIABLES_NAMES[@]}"
 
   return 0
 }
 
-# If script is not sourced - we execute it
+# ========================================
+# Add ability to execute script by itself (for debugging)
+# ========================================
 if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
-  template "$@" || exit "$?"
+  fill_data_for_script_2 "$@" || exit "$?"
 fi
-
-export IS_FILE_SOURCED_FILL_DATA_FOR_SCRIPT_2=1
+# ========================================

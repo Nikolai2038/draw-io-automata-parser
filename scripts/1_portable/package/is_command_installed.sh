@@ -1,8 +1,14 @@
 #!/bin/bash
 
-if [ -n "${IS_FILE_SOURCED_IS_COMMAND_INSTALLED}" ]; then
+# ========================================
+# Source this file only if wasn't sourced already
+# ========================================
+CURRENT_FILE_HASH="$(realpath "${BASH_SOURCE[0]}" | sha256sum | cut -d ' ' -f 1)" || exit "$?"
+if [ -n "${SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]}" ]; then
   return
 fi
+SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]=1
+# ========================================
 
 # Echo 1 if passed command name is installed, and 0 - if not installed.
 function is_command_installed() {
@@ -29,14 +35,15 @@ function is_command_installed() {
   # 3. Main code
   # ========================================
 
-  which "${command_name}" &>/dev/null && echo "1" || echo "0"
+  which "${command_name}" &> /dev/null && echo "1" || echo "0"
 
   return 0
 }
 
-# If script is not sourced - we execute it
+# ========================================
+# Add ability to execute script by itself (for debugging)
+# ========================================
 if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
   is_command_installed "$@" || exit "$?"
 fi
-
-export IS_FILE_SOURCED_IS_COMMAND_INSTALLED=1
+# ========================================

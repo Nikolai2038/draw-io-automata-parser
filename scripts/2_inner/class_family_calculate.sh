@@ -1,8 +1,14 @@
 #!/bin/bash
 
-if [ -n "${IS_FILE_SOURCED_CLASS_FAMILY_CALCULATE}" ]; then
+# ========================================
+# Source this file only if wasn't sourced already
+# ========================================
+CURRENT_FILE_HASH="$(realpath "${BASH_SOURCE[0]}" | sha256sum | cut -d ' ' -f 1)" || exit "$?"
+if [ -n "${SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]}" ]; then
   return
 fi
+SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]=1
+# ========================================
 
 export CLASS_FAMILY_SYMBOL="K"
 
@@ -10,7 +16,7 @@ export CLASS_FAMILIES
 declare -A CLASS_FAMILIES=()
 
 export CLASS_SYMBOLS
-declare -a CLASS_SYMBOLS=("A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z")
+declare -a CLASS_SYMBOLS=({A..Z})
 
 export CLASS_SYMBOLS_COUNT="${#CLASS_SYMBOLS[@]}"
 
@@ -51,10 +57,10 @@ function class_family_calculate() {
   # ========================================
 
   declare -a ellipses_values=()
-  mapfile -t ellipses_values <<<"${ellipses_values_as_string}" || return "$?"
+  mapfile -t ellipses_values <<< "${ellipses_values_as_string}" || return "$?"
 
   declare -a lines=()
-  mapfile -t lines <<<"${lines_to_find_family_class}" || return "$?"
+  mapfile -t lines <<< "${lines_to_find_family_class}" || return "$?"
 
   local lines_count="${#lines[@]}"
 
@@ -86,9 +92,10 @@ function class_family_calculate() {
   return 0
 }
 
-# If script is not sourced - we execute it
+# ========================================
+# Add ability to execute script by itself (for debugging)
+# ========================================
 if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
   class_family_calculate "$@" || exit "$?"
 fi
-
-export IS_FILE_SOURCED_CLASS_FAMILY_CALCULATE=1
+# ========================================

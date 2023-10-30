@@ -1,8 +1,14 @@
 #!/bin/bash
 
-if [ -n "${IS_FILE_SOURCED_LOAD_XML}" ]; then
+# ========================================
+# Source this file only if wasn't sourced already
+# ========================================
+CURRENT_FILE_HASH="$(realpath "${BASH_SOURCE[0]}" | sha256sum | cut -d ' ' -f 1)" || exit "$?"
+if [ -n "${SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]}" ]; then
   return
 fi
+SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]=1
+# ========================================
 
 export ATTRIBUTE_ID="id"
 export ATTRIBUTE_TARGET="target"
@@ -73,11 +79,11 @@ function load_xml() {
   # ----------------------------------------
   # Ellipses
   # ----------------------------------------
-  XML_ELLIPSES="$(echo "<xml>${xml_elements}</xml>" | xpath -q -e "
+  XML_ELLIPSES="$(echo "<xml>${xml_elements}</xml>" | xpath -q -e '
     //mxCell[
-      starts-with(@style, \"ellipse;\")
+      starts-with(@style, "ellipse;")
     ]
-  ")" || return "$?"
+  ')" || return "$?"
   ELLIPSES_COUNT="$(get_nodes_count "${XML_ELLIPSES}")" || return "$?"
 
   if ((ELLIPSES_COUNT < 1)); then
@@ -91,11 +97,11 @@ function load_xml() {
   # Arrows
   # ----------------------------------------
   local arrows_xml
-  arrows_xml="$(echo "<xml>${xml_elements}</xml>" | xpath -q -e "
+  arrows_xml="$(echo "<xml>${xml_elements}</xml>" | xpath -q -e '
     //mxCell[
-      starts-with(@style, \"edgeStyle\")
+      starts-with(@style, "edgeStyle")
     ]
-  ")" || return "$?"
+  ')" || return "$?"
   local arrows_count
   arrows_count="$(get_nodes_count "${arrows_xml}")" || return "$?"
 
@@ -110,11 +116,11 @@ function load_xml() {
   # Arrows labels
   # ----------------------------------------
   export arrows_labels_xml
-  arrows_labels_xml="$(echo "<xml>${xml_elements}</xml>" | xpath -q -e "
+  arrows_labels_xml="$(echo "<xml>${xml_elements}</xml>" | xpath -q -e '
     //mxCell[
-      starts-with(@style, \"edgeLabel\")
+      starts-with(@style, "edgeLabel")
     ]
-  ")" || return "$?"
+  ')" || return "$?"
   local arrows_labels_count
   arrows_labels_count="$(get_nodes_count "${arrows_labels_xml}")" || return "$?"
   print_success "Found ${C_HIGHLIGHT}${arrows_labels_count}${C_RETURN} label arrows!"
@@ -223,14 +229,14 @@ function load_xml() {
     print_error "Ellipses ids as string is empty!"
     return 1
   fi
-  mapfile -t ELLIPSES_IDS <<<"${ellipses_ids_as_string}" || return "$?"
+  mapfile -t ELLIPSES_IDS <<< "${ellipses_ids_as_string}" || return "$?"
 
   ELLIPSES_VALUES_AS_STRING="$(get_node_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_VALUE}")" || return "$?"
   if [ -z "${ELLIPSES_VALUES_AS_STRING}" ]; then
     print_error "Ellipses values as string is empty!"
     return 1
   fi
-  mapfile -t ELLIPSES_VALUES <<<"${ELLIPSES_VALUES_AS_STRING}" || return "$?"
+  mapfile -t ELLIPSES_VALUES <<< "${ELLIPSES_VALUES_AS_STRING}" || return "$?"
   # ----------------------------------------
 
   # ----------------------------------------
@@ -253,17 +259,18 @@ function load_xml() {
   ellipses_ids_as_string="$(echo "${ellipses_attributes_as_string}" | cut -d ' ' -f 2)" || return "$?"
   ELLIPSES_VALUES_AS_STRING="$(echo "${ellipses_attributes_as_string}" | cut -d ' ' -f 1)" || return "$?"
 
-  mapfile -t ELLIPSES_IDS <<<"${ellipses_ids_as_string}" || return "$?"
-  mapfile -t ELLIPSES_VALUES <<<"${ELLIPSES_VALUES_AS_STRING}" || return "$?"
+  mapfile -t ELLIPSES_IDS <<< "${ellipses_ids_as_string}" || return "$?"
+  mapfile -t ELLIPSES_VALUES <<< "${ELLIPSES_VALUES_AS_STRING}" || return "$?"
   # ----------------------------------------
 
   print_success "Loading file ${C_HIGHLIGHT}${file_path}${C_RETURN}: done!"
   return 0
 }
 
-# If script is not sourced - we execute it
+# ========================================
+# Add ability to execute script by itself (for debugging)
+# ========================================
 if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
   load_xml "$@" || exit "$?"
 fi
-
-export IS_FILE_SOURCED_LOAD_XML=1
+# ========================================

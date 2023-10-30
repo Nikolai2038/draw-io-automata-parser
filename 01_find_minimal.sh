@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# ========================================
+# Source this file only if wasn't sourced already
+# ========================================
+CURRENT_FILE_HASH="$(realpath "${BASH_SOURCE[0]}" | sha256sum | cut -d ' ' -f 1)" || exit "$?"
+if [ -n "${SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]}" ]; then
+  return
+fi
+SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]=1
+# ========================================
+
 export ARRAY_INDEX_SEPARATOR="___"
 
 export CALCULATE_K_ITERATION_LIMIT=50
@@ -97,7 +107,7 @@ function automata_parser() {
   local class_families_count=0
   export LAST_CALCULATED_CLASS_FAMILY_ID=0
 
-  while [[ "${class_family_current}" != "${class_family_previous}" ]] && ((class_family_id < CALCULATE_K_ITERATION_LIMIT)); do
+  while [[ ${class_family_current} != "${class_family_previous}" ]] && ((class_family_id < CALCULATE_K_ITERATION_LIMIT)); do
     print_info "Calculate ${C_HIGHLIGHT}${CLASS_FAMILY_SYMBOL}${class_family_id}${C_RETURN}..."
 
     # For Ks greater than 1 we need to calculate lines_to_find_K based on previous family class
@@ -130,7 +140,7 @@ function automata_parser() {
             fi
           done
 
-          if [[ -z "${class_family_linked_cell_value}" ]]; then
+          if [[ -z ${class_family_linked_cell_value} ]]; then
             print_error "Calculation for ${CLASS_FAMILY_SYMBOL} cell value failed! class_name = \"${class_name}\""
             return 1
           fi
@@ -275,7 +285,10 @@ function automata_parser() {
   return "${was_error}"
 }
 
-# If script is not sourced - we execute it
+# ========================================
+# Add ability to execute script by itself (for debugging)
+# ========================================
 if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
   automata_parser "$@" || exit "$?"
 fi
+# ========================================

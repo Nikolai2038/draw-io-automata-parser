@@ -1,8 +1,14 @@
 #!/bin/bash
 
-if [ -n "${IS_FILE_SOURCED_FILL_LAMDA_AND_DELTA_AND_VARIABLES_NAMES}" ]; then
+# ========================================
+# Source this file only if wasn't sourced already
+# ========================================
+CURRENT_FILE_HASH="$(realpath "${BASH_SOURCE[0]}" | sha256sum | cut -d ' ' -f 1)" || exit "$?"
+if [ -n "${SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]}" ]; then
   return
 fi
+SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]=1
+# ========================================
 
 export VARIABLES_NAMES
 declare -a VARIABLES_NAMES=()
@@ -50,19 +56,19 @@ function fill_lamda_and_delta_and_variables_names() {
       return 1
     fi
     declare -a arrow_ids
-    mapfile -t arrow_ids <<<"${arrow_ids_as_string}" || return "$?"
+    mapfile -t arrow_ids <<< "${arrow_ids_as_string}" || return "$?"
 
     # Arrows values can be specified in arrow itself, or in separate label.
     # We check first arrow value, and if it is empty, we seek for its label.
     local arrow_values_as_string
     arrow_values_as_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_VALUE}")"
     declare -a arrow_values
-    mapfile -t arrow_values <<<"${arrow_values_as_string}" || return "$?"
+    mapfile -t arrow_values <<< "${arrow_values_as_string}" || return "$?"
 
     local arrow_targets_ids_string
     arrow_targets_ids_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_TARGET}")"
     declare -a arrow_targets_ids
-    mapfile -t arrow_targets_ids <<<"${arrow_targets_ids_string}" || return "$?"
+    mapfile -t arrow_targets_ids <<< "${arrow_targets_ids_string}" || return "$?"
 
     local arrow_id_in_list
     for ((arrow_id_in_list = 0; arrow_id_in_list < arrows_from_ellipse_count; arrow_id_in_list++)); do
@@ -92,7 +98,7 @@ function fill_lamda_and_delta_and_variables_names() {
       local arrow_target_value
       arrow_target_value="$(get_node_attribute_value "${arrow_target_node}" "${ATTRIBUTE_VALUE}")" || return "$?"
 
-      local arrow_variable_regexpr="([^\\/]+)\\/([^\\/]+)"
+      local arrow_variable_regexpr='([^\/]+)\/([^\/]+)'
 
       local arrow_variable_name
       arrow_variable_name="$(echo "${arrow_value}" | sed -En "s/${arrow_variable_regexpr}/\1/p")" || return "$?"
@@ -122,16 +128,17 @@ function fill_lamda_and_delta_and_variables_names() {
   # Sort variables names
   local variables_names_string_sorted
   variables_names_string_sorted="$(echo "${VARIABLES_NAMES[@]}" | tr ' ' '\n' | sort --unique)" || return "$?"
-  mapfile -t VARIABLES_NAMES <<<"${variables_names_string_sorted}" || return "$?"
+  mapfile -t VARIABLES_NAMES <<< "${variables_names_string_sorted}" || return "$?"
 
   VARIABLES_NAME_COUNT="${#VARIABLES_NAMES[@]}"
 
   return 0
 }
 
-# If script is not sourced - we execute it
+# ========================================
+# Add ability to execute script by itself (for debugging)
+# ========================================
 if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
   fill_lamda_and_delta_and_variables_names "$@" || exit "$?"
 fi
-
-export IS_FILE_SOURCED_FILL_LAMDA_AND_DELTA_AND_VARIABLES_NAMES=1
+# ========================================
