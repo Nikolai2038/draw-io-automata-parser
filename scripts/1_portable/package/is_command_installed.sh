@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Source this file only if wasn't sourced already
+# (REUSE) Source this file only if wasn't sourced already
 {
   current_file_path="$(realpath "${BASH_SOURCE[0]}")" || exit "$?"
   current_file_hash="$(echo "${current_file_path}" | sha256sum | cut -d ' ' -f 1)" || exit "$?"
@@ -19,17 +19,24 @@
   fi
 }
 
+# (REUSE) Prepare before imports
+{
+  source_previous_directory="${PWD}"
+  # We use "cd" instead of specifying file paths directly in the "source" comment, because these comments do not change when files are renamed or moved.
+  # Moreover, we need to specify exact paths in "source" to use links to function and variables between files (language server).
+  cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" || return "$?"
+}
+
+# Imports
+source "../messages.sh" || return "$?"
+
+# (REUSE) Prepare after imports
+{
+  cd "${source_previous_directory}" || return "$?"
+}
+
 # Echo 1 if passed command name is installed, and 0 - if not installed.
 function is_command_installed() {
-  # ========================================
-  # 1. Imports
-  # ========================================
-
-  local source_previous_directory="${PWD}"
-  cd "$(dirname "$(find "$(dirname "${0}")" -name "$(basename "${BASH_SOURCE[0]}")" | head -n 1)")" || return "$?"
-  source "../messages.sh" || return "$?"
-  cd "${source_previous_directory}" || return "$?"
-
   # ========================================
   # 2. Arguments
   # ========================================
@@ -49,7 +56,7 @@ function is_command_installed() {
   return 0
 }
 
-# Add ability to execute script by itself (for debugging)
+# (REUSE) Add ability to execute script by itself (for debugging)
 {
   if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
     is_command_installed "$@" || exit "$?"

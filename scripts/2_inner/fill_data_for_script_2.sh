@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Source this file only if wasn't sourced already
+# (REUSE) Source this file only if wasn't sourced already
 {
   current_file_path="$(realpath "${BASH_SOURCE[0]}")" || exit "$?"
   current_file_hash="$(echo "${current_file_path}" | sha256sum | cut -d ' ' -f 1)" || exit "$?"
@@ -19,6 +19,22 @@
   fi
 }
 
+# (REUSE) Prepare before imports
+{
+  source_previous_directory="${PWD}"
+  # We use "cd" instead of specifying file paths directly in the "source" comment, because these comments do not change when files are renamed or moved.
+  # Moreover, we need to specify exact paths in "source" to use links to function and variables between files (language server).
+  cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" || return "$?"
+}
+
+# Imports
+# ...
+
+# (REUSE) Prepare after imports
+{
+  cd "${source_previous_directory}" || return "$?"
+}
+
 export VARIABLES_NAMES
 declare -a VARIABLES_NAMES=()
 export VARIABLES_NAME_COUNT=0
@@ -34,17 +50,6 @@ export CAN_GO_TO_ELLIPSE_FOR_VALUE
 declare -A CAN_GO_TO_ELLIPSE_FOR_VALUE=()
 
 function fill_data_for_script_2() {
-  # ========================================
-  # 1. Imports
-  # ========================================
-
-  local source_previous_directory="${PWD}"
-  cd "$(dirname "$(find "$(dirname "${0}")" -name "$(basename "${BASH_SOURCE[0]}")" | head -n 1)")" || return "$?"
-  # source "./scripts/..." || return "$?"
-  # source "./scripts/..." || return "$?"
-  # source "./scripts/..." || return "$?"
-  cd "${source_previous_directory}" || return "$?"
-
   # ========================================
   # 2. Arguments
   # ========================================
@@ -141,7 +146,7 @@ function fill_data_for_script_2() {
   return 0
 }
 
-# Add ability to execute script by itself (for debugging)
+# (REUSE) Add ability to execute script by itself (for debugging)
 {
   if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
     fill_data_for_script_2 "$@" || exit "$?"

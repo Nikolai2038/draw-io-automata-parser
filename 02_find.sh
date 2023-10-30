@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Source this file only if wasn't sourced already
+# (REUSE) Source this file only if wasn't sourced already
 {
   current_file_path="$(realpath "${BASH_SOURCE[0]}")" || exit "$?"
   current_file_hash="$(echo "${current_file_path}" | sha256sum | cut -d ' ' -f 1)" || exit "$?"
@@ -19,6 +19,33 @@
   fi
 }
 
+# (REUSE) Prepare before imports
+{
+  source_previous_directory="${PWD}"
+  # We use "cd" instead of specifying file paths directly in the "source" comment, because these comments do not change when files are renamed or moved.
+  # Moreover, we need to specify exact paths in "source" to use links to function and variables between files (language server).
+  cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" || return "$?"
+}
+
+# Imports
+source "./scripts/1_portable/package/install_command.sh" || return "$?"
+source "./scripts/1_portable/messages.sh" || return "$?"
+source "./scripts/2_inner/xpath/load_xml.sh" || return "$?"
+source "./scripts/2_inner/xpath/get_nodes_count.sh" || return "$?"
+source "./scripts/2_inner/xpath/get_node_attribute_value.sh" || return "$?"
+source "./scripts/2_inner/xpath/get_node_with_attribute_value.sh" || return "$?"
+source "./scripts/2_inner/xpath/fill_lamda_and_delta_and_variables_names.sh" || return "$?"
+source "./scripts/2_inner/class_family_calculate.sh" || return "$?"
+source "./scripts/2_inner/class_family_print.sh" || return "$?"
+source "./scripts/2_inner/print_calculations_result.sh" || return "$?"
+source "./scripts/2_inner/fill_data_for_script_2.sh" || return "$?"
+source "./scripts/2_inner/print_result_for_script_2.sh" || return "$?"
+
+# (REUSE) Prepare after imports
+{
+  cd "${source_previous_directory}" || return "$?"
+}
+
 export ARRAY_INDEX_SEPARATOR="___"
 
 # Format for element: `cells["<column header 1 name><separator><column header 2 name><separator><row header name>"]="<cell value>"`
@@ -27,26 +54,6 @@ declare -A CELLS=()
 
 # Start main script of Automata Parser
 function automata_parser() {
-  # ========================================
-  # 1. Imports
-  # ========================================
-
-  local source_previous_directory="${PWD}"
-  cd "$(dirname "$(find "$(dirname "${0}")" -name "$(basename "${BASH_SOURCE[0]}")" | head -n 1)")" || return "$?"
-  source "./scripts/1_portable/package/install_command.sh" || return "$?"
-  source "./scripts/1_portable/messages.sh" || return "$?"
-  source "./scripts/2_inner/xpath/load_xml.sh" || return "$?"
-  source "./scripts/2_inner/xpath/get_nodes_count.sh" || return "$?"
-  source "./scripts/2_inner/xpath/get_node_attribute_value.sh" || return "$?"
-  source "./scripts/2_inner/xpath/get_node_with_attribute_value.sh" || return "$?"
-  source "./scripts/2_inner/xpath/fill_lamda_and_delta_and_variables_names.sh" || return "$?"
-  source "./scripts/2_inner/class_family_calculate.sh" || return "$?"
-  source "./scripts/2_inner/class_family_print.sh" || return "$?"
-  source "./scripts/2_inner/print_calculations_result.sh" || return "$?"
-  source "./scripts/2_inner/fill_data_for_script_2.sh" || return "$?"
-  source "./scripts/2_inner/print_result_for_script_2.sh" || return "$?"
-  cd "${source_previous_directory}" || return "$?"
-
   # ========================================
   # 2. Arguments
   # ========================================
@@ -83,7 +90,7 @@ function automata_parser() {
   return "${was_error}"
 }
 
-# Add ability to execute script by itself (for debugging)
+# (REUSE) Add ability to execute script by itself (for debugging)
 {
   if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
     automata_parser "$@" || exit "$?"

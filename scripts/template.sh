@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Source this file only if wasn't sourced already
+# (REUSE) Source this file only if wasn't sourced already
 {
   current_file_path="$(realpath "${BASH_SOURCE[0]}")" || exit "$?"
   current_file_hash="$(echo "${current_file_path}" | sha256sum | cut -d ' ' -f 1)" || exit "$?"
@@ -19,18 +19,23 @@
   fi
 }
 
-function template() {
-  # ========================================
-  # 1. Imports
-  # ========================================
+# (REUSE) Prepare before imports
+{
+  source_previous_directory="${PWD}"
+  # We use "cd" instead of specifying file paths directly in the "source" comment, because these comments do not change when files are renamed or moved.
+  # Moreover, we need to specify exact paths in "source" to use links to function and variables between files (language server).
+  cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" || return "$?"
+}
 
-  local source_previous_directory="${PWD}"
-  cd "$(dirname "$(find "$(dirname "${0}")" -name "$(basename "${BASH_SOURCE[0]}")" | head -n 1)")" || return "$?"
-  # source "./scripts/..." || return "$?"
-  # source "./scripts/..." || return "$?"
-  # source "./scripts/..." || return "$?"
+# Imports
+# ...
+
+# (REUSE) Prepare after imports
+{
   cd "${source_previous_directory}" || return "$?"
+}
 
+function template() {
   # ========================================
   # 2. Arguments
   # ========================================
@@ -46,7 +51,7 @@ function template() {
   return 0
 }
 
-# Add ability to execute script by itself (for debugging)
+# (REUSE) Add ability to execute script by itself (for debugging)
 {
   if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
     template "$@" || exit "$?"
