@@ -3,11 +3,21 @@
 # ========================================
 # Source this file only if wasn't sourced already
 # ========================================
-CURRENT_FILE_HASH="$(realpath "${BASH_SOURCE[0]}" | sha256sum | cut -d ' ' -f 1)" || exit "$?"
-if [ -n "${SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]}" ]; then
+current_file_path="$(realpath "${BASH_SOURCE[0]}")" || exit "$?"
+current_file_hash="$(echo "${current_file_path}" | sha256sum | cut -d ' ' -f 1)" || exit "$?"
+current_file_is_sourced_variable_name="FILE_IS_SOURCED_${current_file_hash^^}"
+current_file_is_sourced="$(eval "echo \"\${${current_file_is_sourced_variable_name}}\"")" || exit "$?"
+if [ -n "${current_file_is_sourced}" ]; then
   return
 fi
-SOURCED_FILES["hash_${CURRENT_FILE_HASH}"]=1
+eval "export ${current_file_is_sourced_variable_name}=1" || exit "$?"
+if [ "${IS_DEBUG_BASH}" == "1" ]; then
+  if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
+    echo "Executing \"${current_file_path}\"..." >&2
+  else
+    echo "Sourcing \"${current_file_path}\"..." >&2
+  fi
+fi
 # ========================================
 
 function get_node_attribute_value() {
