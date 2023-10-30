@@ -21,10 +21,14 @@
 
 # (REUSE) Prepare before imports
 {
+  if [ "${IS_DEBUG_BASH}" == "1" ]; then
+    echo "Directory before imports: \"${PWD}\"." >&2
+  fi
+
   source_previous_directory="${PWD}"
   # We use "cd" instead of specifying file paths directly in the "source" comment, because these comments do not change when files are renamed or moved.
   # Moreover, we need to specify exact paths in "source" to use links to function and variables between files (language server).
-  cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" || return "$?"
+  cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" || exit "$?"
 }
 
 # Imports
@@ -32,7 +36,11 @@
 
 # (REUSE) Prepare after imports
 {
-  cd "${source_previous_directory}" || return "$?"
+  cd "${source_previous_directory}" || exit "$?"
+
+  if [ "${IS_DEBUG_BASH}" == "1" ]; then
+    echo "Directory after imports: \"${PWD}\"." >&2
+  fi
 }
 
 export VARIABLES_NAMES

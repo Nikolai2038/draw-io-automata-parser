@@ -21,27 +21,35 @@
 
 # (REUSE) Prepare before imports
 {
+  if [ "${IS_DEBUG_BASH}" == "1" ]; then
+    echo "Directory before imports: \"${PWD}\"." >&2
+  fi
+
   source_previous_directory="${PWD}"
   # We use "cd" instead of specifying file paths directly in the "source" comment, because these comments do not change when files are renamed or moved.
   # Moreover, we need to specify exact paths in "source" to use links to function and variables between files (language server).
-  cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" || return "$?"
+  cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" || exit "$?"
 }
 
 # Imports
-source "./scripts/package/install_command.sh" || return "$?"
-source "./scripts/messages.sh" || return "$?"
-source "./scripts/xpath/load_xml.sh" || return "$?"
-source "./scripts/xpath/get_nodes_count.sh" || return "$?"
-source "./scripts/xpath/get_node_attribute_value.sh" || return "$?"
-source "./scripts/xpath/get_node_with_attribute_value.sh" || return "$?"
-source "./scripts/xpath/fill_lamda_and_delta_and_variables_names.sh" || return "$?"
-source "./scripts/01_find_minimal/class_family_calculate.sh" || return "$?"
-source "./scripts/01_find_minimal/class_family_print.sh" || return "$?"
-source "./scripts/01_find_minimal/print_calculations_result.sh" || return "$?"
+source "./scripts/package/install_command.sh" || exit "$?"
+source "./scripts/messages.sh" || exit "$?"
+source "./scripts/xpath/load_xml.sh" || exit "$?"
+source "./scripts/xpath/get_nodes_count.sh" || exit "$?"
+source "./scripts/xpath/get_node_attribute_value.sh" || exit "$?"
+source "./scripts/xpath/get_node_with_attribute_value.sh" || exit "$?"
+source "./scripts/xpath/fill_lamda_and_delta_and_variables_names.sh" || exit "$?"
+source "./scripts/01_find_minimal/class_family_calculate.sh" || exit "$?"
+source "./scripts/01_find_minimal/class_family_print.sh" || exit "$?"
+source "./scripts/01_find_minimal/print_calculations_result.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
 {
-  cd "${source_previous_directory}" || return "$?"
+  cd "${source_previous_directory}" || exit "$?"
+
+  if [ "${IS_DEBUG_BASH}" == "1" ]; then
+    echo "Directory after imports: \"${PWD}\"." >&2
+  fi
 }
 
 export ARRAY_INDEX_SEPARATOR="___"
