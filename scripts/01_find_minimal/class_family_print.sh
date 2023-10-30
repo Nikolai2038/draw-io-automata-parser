@@ -28,27 +28,63 @@
 }
 
 # Imports
-source "../../1_portable/messages.sh" || return "$?"
+source "../messages.sh" || return "$?"
 
 # (REUSE) Prepare after imports
 {
   cd "${source_previous_directory}" || return "$?"
 }
 
-function get_node_attribute_value() {
-  local xml="${1}" && shift
-  if [ -z "${xml}" ]; then
-    echo ""
-    return 0
-  fi
+export DO_NOT_PRINT_CLASS_FAMILY_ID=0
+export DO_PRINT_CLASS_FAMILY_ID=1
 
-  local attribute_name="${1}" && shift
-  if [ -z "${attribute_name}" ]; then
-    print_error "You need to specify attribute name!"
+function class_family_print() {
+  local class_family_id="${1}" && shift
+  if [ -z "${class_family_id}" ]; then
+    print_error "You need to specify class family id!"
     return 1
   fi
 
-  echo "<xml>${xml}</xml>" | xpath -q -e "(//mxCell)/@${attribute_name}" | sed -E "s/^ ${attribute_name}=\"([^\"]+)\"\$/\\1/" || return "$?"
+  local do_print_class_family_id="${1}" && shift
+  if [ -z "${class_family_id}" ]; then
+    print_error "You need to specify do or do not print class family id!"
+    return 1
+  fi
+
+  echo -n "{"
+
+  local is_first_class_to_print=1
+
+  local class_symbol_id
+  for ((class_symbol_id = 0; class_symbol_id < CLASS_SYMBOLS_COUNT; class_symbol_id++)); do
+    local class_symbol="${CLASS_SYMBOLS["${class_symbol_id}"]}"
+    local class_key="${class_symbol}${class_family_id}"
+
+    local class_value="${CLASS_FAMILIES["${class_key}"]}"
+
+    if [ -z "${class_value}" ]; then
+      continue
+    fi
+
+    if ((is_first_class_to_print)); then
+      is_first_class_to_print=0
+    else
+      echo -n ","
+    fi
+
+    echo -n " ${class_symbol}"
+
+    local class_value_with_commas
+    class_value_with_commas="$(echo "${class_value}" | sed -E 's/ /,/g')" || return "$?"
+
+    if ((do_print_class_family_id)); then
+      echo -n "${class_family_id}={${class_value_with_commas}}"
+    else
+      echo -n "={${class_value_with_commas}}"
+    fi
+  done
+
+  echo " }"
 
   return 0
 }
@@ -56,6 +92,6 @@ function get_node_attribute_value() {
 # (REUSE) Add ability to execute script by itself (for debugging)
 {
   if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
-    get_node_attribute_value "$@" || exit "$?"
+    class_family_print "$@" || exit "$?"
   fi
 }

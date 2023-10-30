@@ -28,14 +28,14 @@
 }
 
 # Imports
-source "../../1_portable/messages.sh" || return "$?"
+source "../messages.sh" || return "$?"
 
 # (REUSE) Prepare after imports
 {
   cd "${source_previous_directory}" || return "$?"
 }
 
-function get_node_with_attribute_value() {
+function get_node_attribute_value() {
   local xml="${1}" && shift
   if [ -z "${xml}" ]; then
     echo ""
@@ -44,17 +44,11 @@ function get_node_with_attribute_value() {
 
   local attribute_name="${1}" && shift
   if [ -z "${attribute_name}" ]; then
-    print_error "You need to specify attribute name!" >&2
+    print_error "You need to specify attribute name!"
     return 1
   fi
 
-  local attribute_value="${1}" && shift
-  if [ -z "${attribute_value}" ]; then
-    print_error "You need to specify attribute value!" >&2
-    return 1
-  fi
-
-  echo "<xml>${xml}</xml>" | xpath -q -e "(//mxCell[@${attribute_name}=\"${attribute_value}\"]" || return "$?"
+  echo "<xml>${xml}</xml>" | xpath -q -e "(//mxCell)/@${attribute_name}" | sed -E "s/^ ${attribute_name}=\"([^\"]+)\"\$/\\1/" || return "$?"
 
   return 0
 }
@@ -62,6 +56,6 @@ function get_node_with_attribute_value() {
 # (REUSE) Add ability to execute script by itself (for debugging)
 {
   if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
-    get_node_with_attribute_value "$@" || exit "$?"
+    get_node_attribute_value "$@" || exit "$?"
   fi
 }

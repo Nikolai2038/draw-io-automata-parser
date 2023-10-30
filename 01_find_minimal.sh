@@ -28,16 +28,16 @@
 }
 
 # Imports
-source "./scripts/1_portable/package/install_command.sh" || return "$?"
-source "./scripts/1_portable/messages.sh" || return "$?"
-source "./scripts/2_inner/xpath/load_xml.sh" || return "$?"
-source "./scripts/2_inner/xpath/get_nodes_count.sh" || return "$?"
-source "./scripts/2_inner/xpath/get_node_attribute_value.sh" || return "$?"
-source "./scripts/2_inner/xpath/get_node_with_attribute_value.sh" || return "$?"
-source "./scripts/2_inner/xpath/fill_lamda_and_delta_and_variables_names.sh" || return "$?"
-source "./scripts/2_inner/class_family_calculate.sh" || return "$?"
-source "./scripts/2_inner/class_family_print.sh" || return "$?"
-source "./scripts/2_inner/print_calculations_result.sh" || return "$?"
+source "./scripts/package/install_command.sh" || return "$?"
+source "./scripts/messages.sh" || return "$?"
+source "./scripts/xpath/load_xml.sh" || return "$?"
+source "./scripts/xpath/get_nodes_count.sh" || return "$?"
+source "./scripts/xpath/get_node_attribute_value.sh" || return "$?"
+source "./scripts/xpath/get_node_with_attribute_value.sh" || return "$?"
+source "./scripts/xpath/fill_lamda_and_delta_and_variables_names.sh" || return "$?"
+source "./scripts/01_find_minimal/class_family_calculate.sh" || return "$?"
+source "./scripts/01_find_minimal/class_family_print.sh" || return "$?"
+source "./scripts/01_find_minimal/print_calculations_result.sh" || return "$?"
 
 # (REUSE) Prepare after imports
 {

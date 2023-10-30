@@ -28,7 +28,7 @@
 }
 
 # Imports
-source "./../../1_portable/messages.sh" || return "$?"
+source "./../messages.sh" || return "$?"
 source "./get_node_attribute_value.sh" || return "$?"
 source "./get_node_with_attribute_value.sh" || return "$?"
 
