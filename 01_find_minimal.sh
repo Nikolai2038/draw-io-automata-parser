@@ -44,7 +44,7 @@ source "./scripts/xpath/load_xml.sh" || exit "$?"
 source "./scripts/xpath/get_nodes_count.sh" || exit "$?"
 source "./scripts/xpath/get_node_attribute_value.sh" || exit "$?"
 source "./scripts/xpath/get_node_with_attribute_value.sh" || exit "$?"
-source "./scripts/xpath/fill_lamda_and_delta_and_variables_names.sh" || exit "$?"
+source "./scripts/xpath/fill_lambda_and_delta_and_variables_names.sh" || exit "$?"
 source "./scripts/01_find_minimal/class_family_calculate.sh" || exit "$?"
 source "./scripts/01_find_minimal/class_family_print.sh" || exit "$?"
 source "./scripts/01_find_minimal/print_calculations_result.sh" || exit "$?"
@@ -81,7 +81,7 @@ function automata_parser() {
 
   print_info "Parsing..."
 
-  fill_lamda_and_delta_and_variables_names || return "$?"
+  fill_lambda_and_delta_and_variables_names || return "$?"
 
   # ----------------------------------------
   # Prepare for K calculations
