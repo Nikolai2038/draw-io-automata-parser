@@ -28,7 +28,7 @@
 }
 
 # Imports
-source "../messages.sh" || return "$?"
+source "../messages.sh"
 
 # (REUSE) Prepare after imports
 {

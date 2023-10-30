@@ -28,9 +28,9 @@
 }
 
 # Imports
-source "./../../1_portable/messages.sh" || return "$?"
-source "./get_node_attribute_value.sh" || return "$?"
-source "./get_node_with_attribute_value.sh" || return "$?"
+source "./../../1_portable/messages.sh"
+source "./get_node_attribute_value.sh"
+source "./get_node_with_attribute_value.sh"
 
 # (REUSE) Prepare after imports
 {

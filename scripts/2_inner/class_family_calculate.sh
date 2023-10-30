@@ -28,7 +28,7 @@
 }
 
 # Imports
-source "../1_portable/messages.sh" || return "$?"
+source "../1_portable/messages.sh"
 
 # (REUSE) Prepare after imports
 {
