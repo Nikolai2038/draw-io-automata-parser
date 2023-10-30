@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# (REUSE) Special function to get current script file hash
+function get_text_hash() {
+  echo "${*}" | sha256sum | cut -d ' ' -f 1 || return "$?"
+  return 0
+}
+
 # (REUSE) Source this file only if wasn't sourced already
 {
   current_file_path="$(realpath "${BASH_SOURCE[0]}")" || exit "$?"
@@ -21,11 +27,10 @@
 
 # (REUSE) Prepare before imports
 {
-  if [ "${IS_DEBUG_BASH}" == "1" ]; then
-    echo "Directory before imports: \"${PWD}\"." >&2
-  fi
+  # Because variables is the same when sourcing, we depend on file hash.
+  # Also, we don't use variable for variable name here, because it will fall in the same problem.
+  eval "source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")=\"${PWD}\"" || exit "$?"
 
-  source_previous_directory="${PWD}"
   # We use "cd" instead of specifying file paths directly in the "source" comment, because these comments do not change when files are renamed or moved.
   # Moreover, we need to specify exact paths in "source" to use links to function and variables between files (language server).
   cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" || exit "$?"
@@ -36,11 +41,7 @@
 
 # (REUSE) Prepare after imports
 {
-  cd "${source_previous_directory}" || exit "$?"
-
-  if [ "${IS_DEBUG_BASH}" == "1" ]; then
-    echo "Directory after imports: \"${PWD}\"." >&2
-  fi
+  eval "cd \"\${source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")}\"" || exit "$?"
 }
 
 # Cuts text if it is longer than the specified max length
