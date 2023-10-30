@@ -37,19 +37,11 @@ source "../messages.sh" || return "$?"
 
 # Echo 1 if passed command name is installed, and 0 - if not installed.
 function is_command_installed() {
-  # ========================================
-  # 2. Arguments
-  # ========================================
-
   local command_name="${1}" && shift
   if [ -z "${command_name}" ]; then
     print_error "You need to specify command name!"
     return 1
   fi
-
-  # ========================================
-  # 3. Main code
-  # ========================================
 
   which "${command_name}" &> /dev/null && echo "1" || echo "0"
 

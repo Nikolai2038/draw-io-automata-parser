@@ -36,19 +36,11 @@ source "../../1_portable/messages.sh" || return "$?"
 }
 
 function get_nodes_count() {
-  # ========================================
-  # 2. Arguments
-  # ========================================
-
   local xml="${1}" && shift
   if [ -z "${xml}" ]; then
     echo 0
     return 0
   fi
-
-  # ========================================
-  # 3. Main code
-  # ========================================
 
   echo "<xml>${xml}</xml>" | xpath -q -e "count(//mxCell)" || return "$?"
 

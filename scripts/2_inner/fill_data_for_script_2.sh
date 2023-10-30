@@ -50,16 +50,6 @@ export CAN_GO_TO_ELLIPSE_FOR_VALUE
 declare -A CAN_GO_TO_ELLIPSE_FOR_VALUE=()
 
 function fill_data_for_script_2() {
-  # ========================================
-  # 2. Arguments
-  # ========================================
-
-  # None
-
-  # ========================================
-  # 3. Main code
-  # ========================================
-
   local ellipse_id_in_list
   for ((ellipse_id_in_list = 0; ellipse_id_in_list < ELLIPSES_COUNT; ellipse_id_in_list++)); do
     local ellipse_id="${ELLIPSES_IDS["${ellipse_id_in_list}"]}"

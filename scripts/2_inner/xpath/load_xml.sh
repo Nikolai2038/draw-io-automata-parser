@@ -56,19 +56,11 @@ export ELLIPSES_VALUES
 declare -a ELLIPSES_VALUES
 
 function load_xml() {
-  # ========================================
-  # 2. Arguments
-  # ========================================
-
   local file_path="${1}" && shift
   if [ -z "${file_path}" ]; then
     print_error "You need to specify file path!"
     return 1
   fi
-
-  # ========================================
-  # 3. Main code
-  # ========================================
 
   print_info "Loading file ${C_HIGHLIGHT}${file_path}${C_RETURN}..."
 

@@ -39,10 +39,6 @@ export DO_NOT_PRINT_CLASS_FAMILY_ID=0
 export DO_PRINT_CLASS_FAMILY_ID=1
 
 function class_family_print() {
-  # ========================================
-  # 2. Arguments
-  # ========================================
-
   local class_family_id="${1}" && shift
   if [ -z "${class_family_id}" ]; then
     print_error "You need to specify class family id!"
@@ -54,10 +50,6 @@ function class_family_print() {
     print_error "You need to specify do or do not print class family id!"
     return 1
   fi
-
-  # ========================================
-  # 3. Main code
-  # ========================================
 
   echo -n "{"
 

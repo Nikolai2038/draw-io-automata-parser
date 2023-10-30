@@ -36,10 +36,6 @@ source "../../1_portable/messages.sh" || return "$?"
 }
 
 function get_node_attribute_value() {
-  # ========================================
-  # 2. Arguments
-  # ========================================
-
   local xml="${1}" && shift
   if [ -z "${xml}" ]; then
     echo ""
@@ -51,10 +47,6 @@ function get_node_attribute_value() {
     print_error "You need to specify attribute name!"
     return 1
   fi
-
-  # ========================================
-  # 3. Main code
-  # ========================================
 
   echo "<xml>${xml}</xml>" | xpath -q -e "(//mxCell)/@${attribute_name}" | sed -E "s/^ ${attribute_name}=\"([^\"]+)\"\$/\\1/" || return "$?"
 

@@ -46,10 +46,6 @@ declare -a CLASS_SYMBOLS=({A..Z})
 export CLASS_SYMBOLS_COUNT="${#CLASS_SYMBOLS[@]}"
 
 function class_family_calculate() {
-  # ========================================
-  # 2. Arguments
-  # ========================================
-
   local ellipses_values_as_string="${1}" && shift
   if [ -z "${ellipses_values_as_string}" ]; then
     print_error "You need to specify ellipses values as string!"
@@ -67,10 +63,6 @@ function class_family_calculate() {
     print_error "You need to specify class family id!"
     return 1
   fi
-
-  # ========================================
-  # 3. Main code
-  # ========================================
 
   declare -a ellipses_values=()
   mapfile -t ellipses_values <<< "${ellipses_values_as_string}" || return "$?"

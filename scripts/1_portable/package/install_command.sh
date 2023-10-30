@@ -38,10 +38,6 @@ source "./../messages.sh" || return "$?"
 
 # Install command with specified name
 function install_command() {
-  # ========================================
-  # 2. Arguments
-  # ========================================
-
   local command_name="${1}"
   if [ -z "${command_name}" ]; then
     print_error "You need to specify command name!"
@@ -49,10 +45,6 @@ function install_command() {
   fi
 
   local package_name="${2}"
-
-  # ========================================
-  # 3. Main code
-  # ========================================
 
   local is_command_installed
   is_command_installed="$(is_command_installed "${command_name}")" || return "$?"

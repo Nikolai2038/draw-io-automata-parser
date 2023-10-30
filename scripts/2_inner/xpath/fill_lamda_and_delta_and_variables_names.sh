@@ -41,16 +41,6 @@ declare -a VARIABLES_NAMES=()
 export VARIABLES_NAME_COUNT=0
 
 function fill_lamda_and_delta_and_variables_names() {
-  # ========================================
-  # 2. Arguments
-  # ========================================
-
-  # None
-
-  # ========================================
-  # 3. Main code
-  # ========================================
-
   local ellipse_id_in_list
   for ((ellipse_id_in_list = 0; ellipse_id_in_list < ELLIPSES_COUNT; ellipse_id_in_list++)); do
     local ellipse_id="${ELLIPSES_IDS["${ellipse_id_in_list}"]}"

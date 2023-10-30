@@ -58,16 +58,8 @@ export C_RETURN='COLOR_RETURN'
 
 # Prints a message with the specified prefix and text
 function print_color_message() {
-  # ========================================
-  # 2. Arguments
-  # ========================================
-
   local main_color="${1}" && shift
   local text="${1}" && shift
-
-  # ========================================
-  # 3. Main code
-  # ========================================
 
   # Replaces the special string with the text color
   # (don't forget to escape the first color character with an additional backslash)

@@ -57,10 +57,6 @@ declare -a LAST_CLASS_FAMILY_SYMBOLS=()
 
 # Start main script of Automata Parser
 function automata_parser() {
-  # ========================================
-  # 2. Arguments
-  # ========================================
-
   print_info "Welcome to ${C_HIGHLIGHT}Automata Parser${C_RETURN}!"
 
   local file_path="${1}" && shift
@@ -68,10 +64,6 @@ function automata_parser() {
     print_error "You need to specify file path!"
     return 1
   fi
-
-  # ========================================
-  # 3. Main code
-  # ========================================
 
   install_command "xpath" "libxml-xpath-perl" || return "$?"
 

@@ -90,15 +90,7 @@ function find_next_ellipses_for_variable_name() {
 }
 
 function print_result_for_script_2() {
-  # ========================================
-  # 2. Arguments
-  # ========================================
-
   local was_error="${1:-0}" && shift
-
-  # ========================================
-  # 3. Main code
-  # ========================================
 
   declare -a combinations=("${START_ARROW_TARGET_VALUE}")
   local combinations_count="${#combinations[@]}"

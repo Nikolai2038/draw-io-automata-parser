@@ -61,15 +61,7 @@ export SYMBOL_ELLIPSES_VALUES="S"
 export SYMBOL_START_ELLIPSE_VALUE="u0"
 
 function print_calculations_result() {
-  # ========================================
-  # 2. Arguments
-  # ========================================
-
   local was_error="${1:-0}" && shift
-
-  # ========================================
-  # 3. Main code
-  # ========================================
 
   # ----------------------------------------
   # Creating table 1 and table 2 headers
