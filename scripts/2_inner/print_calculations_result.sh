@@ -28,8 +28,8 @@
 }
 
 # Imports
-source "../1_portable/messages.sh"
-source "./class_family_print.sh"
+source "../1_portable/messages.sh" || return "$?"
+source "./class_family_print.sh" || return "$?"
 
 # (REUSE) Prepare after imports
 {

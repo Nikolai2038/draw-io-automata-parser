@@ -28,8 +28,8 @@
 }
 
 # Imports
-source "./is_command_installed.sh"
-source "./../messages.sh"
+source "./is_command_installed.sh" || return "$?"
+source "./../messages.sh" || return "$?"
 
 # (REUSE) Prepare after imports
 {
