@@ -65,7 +65,8 @@ function find_next_ellipses_for_variable_name() {
   while [ "$#" -gt 0 ]; do
     local ellipse_name_in_list="${1}" && shift
 
-    local value="${CAN_GO_TO_ELLIPSE_FOR_VALUE["${ARRAY_INDEX_SEPARATOR}${ellipse_name_in_list}${ARRAY_INDEX_SEPARATOR}${variable_name_in_list}"]}"
+    local value
+    value="$(array_get "${ARRAY_CAN_GO_TO_ELLIPSE_FOR_VALUE}" "${ellipse_name_in_list}" "${variable_name_in_list}")" || return "$?"
 
     # Skip values with no arrows
     if [ -z "${value}" ]; then
@@ -103,17 +104,6 @@ function print_result_for_script_2() {
   declare -a combinations=("${START_ARROW_TARGET_VALUE}")
   local combinations_count="${#combinations[@]}"
 
-  local variable_name_id_in_list
-  for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
-    local variable_name_in_list="${VARIABLES_NAMES["${variable_name_id_in_list}"]}"
-    if [ "${variable_name_in_list}" == "${SINGLE_ARROW_REPLACEMENT}" ]; then
-      variable_name_in_list="${SINGLE_ARROW}"
-    fi
-
-    echo -en "\t${variable_name_in_list}"
-  done
-  echo ""
-
   local combination_id
   for ((combination_id = 0; combination_id < combinations_count; combination_id++)); do
     local combination_as_string="${combinations["${combination_id}"]}"
@@ -123,7 +113,8 @@ function print_result_for_script_2() {
     local combination_as_string_with_braces
     combination_as_string_with_braces="{$(print_with_delimiter "," "${combination_as_string:-"${EMPTY_SPACE_SYMBOL}"}")}" || return "$?"
 
-    echo -en "${combination_as_string_with_braces}"
+    table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02}" "$((combination_id + 1))" "0" "${combination_as_string_with_braces}" || return "$?"
+
     local variable_name_id_in_list
     for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
       local variable_name_in_list="${VARIABLES_NAMES["${variable_name_id_in_list}"]}"
@@ -134,7 +125,7 @@ function print_result_for_script_2() {
       local next_ellipses_for_variable_name_as_string2
       next_ellipses_for_variable_name_as_string2="{$(print_with_delimiter "," "${next_ellipses_for_variable_name_as_string:-"${EMPTY_SPACE_SYMBOL}"}")}" || return "$?"
 
-      echo -en "\t${next_ellipses_for_variable_name_as_string2}"
+      table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02}" "$((combination_id + 1))" "$((variable_name_id_in_list + 1))" "${next_ellipses_for_variable_name_as_string2}" || return "$?"
 
       local was_already=0
       local combination_id2
@@ -151,9 +142,9 @@ function print_result_for_script_2() {
         combinations_count="${#combinations[@]}"
       fi
     done
-    echo ""
   done
 
+  table_set_rows "${TABLE_NAME_FOR_SCRIPT_02}" "${combinations_count}" || return "$?"
   table_print "${TABLE_NAME_FOR_SCRIPT_02}" || return "$?"
 
   return 0

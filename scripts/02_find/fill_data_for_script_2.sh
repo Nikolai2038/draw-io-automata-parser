@@ -42,6 +42,8 @@ source "../table/table_set_columns.sh" || exit "$?"
 source "../table/table_set_rows.sh" || exit "$?"
 source "../table/table_set_cell_value.sh" || exit "$?"
 source "../table/table_add_separator_after_row.sh" || exit "$?"
+source "../array/array_get.sh" || exit "$?"
+source "../array/array_set.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
 {
@@ -103,10 +105,6 @@ function fill_data_for_script_2() {
         return 1
       fi
 
-      if [ "${arrow_value}" == "${SINGLE_ARROW}" ]; then
-        arrow_value="${SINGLE_ARROW_REPLACEMENT}"
-      fi
-
       local arrow_target_id="${arrow_targets_ids["${arrow_id_in_list}"]}"
       local arrow_target_node
       arrow_target_node="$(get_node_with_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_ID}" "${arrow_target_id}")" || return "$?"
@@ -114,12 +112,13 @@ function fill_data_for_script_2() {
       arrow_target_value="$(get_node_attribute_value "${arrow_target_node}" "${ATTRIBUTE_VALUE}")" || return "$?"
 
       # Add new next ellipse available
-      local current_value="${CAN_GO_TO_ELLIPSE_FOR_VALUE["${ARRAY_INDEX_SEPARATOR}${ellipse_value}${ARRAY_INDEX_SEPARATOR}${arrow_value}"]}"
+      local current_value
+      current_value="$(array_get "${ARRAY_CAN_GO_TO_ELLIPSE_FOR_VALUE}" "${ellipse_value}" "${arrow_value}")" || return "$?"
       if [ -n "${current_value}" ]; then
         current_value+=" "
       fi
       current_value+="${arrow_target_value}"
-      CAN_GO_TO_ELLIPSE_FOR_VALUE["${ARRAY_INDEX_SEPARATOR}${ellipse_value}${ARRAY_INDEX_SEPARATOR}${arrow_value}"]="${current_value}"
+      array_set "${ARRAY_CAN_GO_TO_ELLIPSE_FOR_VALUE}" "${ellipse_value}" "${arrow_value}" "${current_value}" || return "$?"
 
       # Collecting all variables names into "variables_names" array
       VARIABLES_NAMES+=("${arrow_value}")
