@@ -50,7 +50,10 @@ function table_get_columns() {
   local table_name="${1}" && shift
   variables_must_be_specified "table_name" || return "$?"
 
-  array_get "${TABLE_COLUMN_NUMBER_PREFIX}" "${table_name}" || return "$?"
+  local columns_number
+  columns_number="$(array_get "${TABLE_COLUMN_NUMBER_PREFIX}" "${table_name}")" || return "$?"
+
+  echo "${columns_number:-0}"
 
   return 0
 }

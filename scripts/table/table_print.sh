@@ -43,6 +43,8 @@ source "../array/array_get.sh" || exit "$?"
 source "../string/string_get_with_length.sh" || exit "$?"
 source "./table_get_column_width.sh" || exit "$?"
 source "./table_get_cell_value.sh" || exit "$?"
+source "./table_get_columns.sh" || exit "$?"
+source "./table_get_rows.sh" || exit "$?"
 source "./table_is_separator_after_row.sh" || exit "$?"
 source "../string/string_repeat_symbol.sh" || exit "$?"
 
@@ -56,14 +58,14 @@ function table_print() {
   variables_must_be_specified "table_name" || return "$?"
 
   local rows_number
-  rows_number="$(array_get "${TABLE_COLUMN_NUMBER_PREFIX}" "${table_name}")" || return "$?"
+  rows_number="$(table_get_rows "${table_name}")" || return "$?"
   if [ -z "${rows_number}" ]; then
     print_error "You must define rows number first!" || return "$?"
     return 1
   fi
 
   local columns_number
-  columns_number="$(array_get "${TABLE_COLUMN_NUMBER_PREFIX}" "${table_name}")" || return "$?"
+  columns_number="$(table_get_columns "${table_name}")" || return "$?"
   if [ -z "${columns_number}" ]; then
     print_error "You must define columns number first!" || return "$?"
     return 1
@@ -95,32 +97,36 @@ function table_print() {
   horizontal_border="$(string_repeat_symbol "${TABLE_HORIZONTAL_BORDER}" "${row_text_width}")" || return "$?"
 
   echo "${horizontal_border}"
-  local row_id
-  for ((row_id = 0; row_id < rows_number; row_id++)); do
-    local column_id
-    for ((column_id = 0; column_id < columns_number; column_id++)); do
-      local column_width
-      column_width="$(table_get_column_width "${table_name}" "${column_id}")" || return "$?"
+  if ((rows_number > 0)); then
+    local row_id
+    for ((row_id = 0; row_id < rows_number; row_id++)); do
+      local column_id
+      for ((column_id = 0; column_id < columns_number; column_id++)); do
+        local column_width
+        column_width="$(table_get_column_width "${table_name}" "${column_id}")" || return "$?"
 
-      local cell_value
-      cell_value="$(table_get_cell_value "${table_name}" "${row_id}" "${column_id}")" || return "$?"
+        local cell_value
+        cell_value="$(table_get_cell_value "${table_name}" "${row_id}" "${column_id}")" || return "$?"
 
-      cell_value="$(string_get_with_length "${cell_value}" "${column_width}")" || return "$?"
+        cell_value="$(string_get_with_length "${cell_value}" "${column_width}")" || return "$?"
 
-      if ((column_id > 0)); then
-        echo -n "${row_extra_prefix_after_first}"
+        if ((column_id > 0)); then
+          echo -n "${row_extra_prefix_after_first}"
+        fi
+        echo -n "${row_prefix}${cell_value}"
+      done
+      echo "${row_postfix}"
+
+      # Extra separators, if needed
+      local is_separator_after_row
+      is_separator_after_row="$(table_is_separator_after_row "${table_name}" "${row_id}")" || return "$?"
+      if ((is_separator_after_row)); then
+        echo "${horizontal_border}"
       fi
-      echo -n "${row_prefix}${cell_value}"
     done
-    echo "${row_postfix}"
-
-    # Extra separators, if needed
-    local is_separator_after_row
-    is_separator_after_row="$(table_is_separator_after_row "${table_name}" "${row_id}")" || return "$?"
-    if ((is_separator_after_row)); then
-      echo "${horizontal_border}"
-    fi
-  done
+  else
+    string_get_with_length "No rows" "${row_text_width}" || return "$?"
+  fi
   echo "${horizontal_border}"
 
   return 0

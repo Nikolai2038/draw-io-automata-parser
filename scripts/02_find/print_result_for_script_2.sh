@@ -38,6 +38,7 @@ function get_text_hash() {
 
 # Imports
 source "./_constants.sh" || exit "$?"
+source "../table/table_print.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
 {
@@ -152,6 +153,8 @@ function print_result_for_script_2() {
     done
     echo ""
   done
+
+  table_print "${TABLE_NAME_FOR_SCRIPT_02}" || return "$?"
 
   return 0
 }

@@ -51,7 +51,10 @@ function table_get_column_width() {
   local column_id="${1}" && shift
   variables_must_be_specified "table_name" "column_id" || return "$?"
 
-  array_get "${TABLE_COLUMN_MAX_WIDTH_PREFIX}" "${table_name}" "${column_id}" || return "$?"
+  local column_width
+  column_width="$(array_get "${TABLE_COLUMN_MAX_WIDTH_PREFIX}" "${table_name}" "${column_id}")" || return "$?"
+
+  echo "${column_width:-0}"
 
   return 0
 }

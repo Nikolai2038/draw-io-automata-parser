@@ -57,11 +57,11 @@ function table_set_cell_value() {
 
   array_set "${TABLE_CELL_PREFIX}" "${table_name}" "${row_id}" "${column_id}" "${cell_value}" || return "$?"
 
-  local column_max_width
-  column_max_width="$(table_get_column_width "${table_name}" "${column_id}")" || return "$?"
+  local column_width
+  column_width="$(table_get_column_width "${table_name}" "${column_id}")" || return "$?"
 
   local cell_width="${#cell_value}"
-  if ((cell_width > column_max_width)); then
+  if ((cell_width > column_width)); then
     table_set_column_width "${table_name}" "${column_id}" "${cell_width}" || return "$?"
   fi
 

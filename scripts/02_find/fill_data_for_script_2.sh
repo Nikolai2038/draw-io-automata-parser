@@ -38,6 +38,10 @@ function get_text_hash() {
 
 # Imports
 source "./_constants.sh" || exit "$?"
+source "../table/table_set_columns.sh" || exit "$?"
+source "../table/table_set_rows.sh" || exit "$?"
+source "../table/table_set_cell_value.sh" || exit "$?"
+source "../table/table_add_separator_after_row.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
 {
@@ -127,6 +131,18 @@ function fill_data_for_script_2() {
   variables_names_string_sorted="$(echo "${VARIABLES_NAMES[@]}" | tr ' ' '\n' | sort --unique)" || return "$?"
   mapfile -t VARIABLES_NAMES <<< "${variables_names_string_sorted}" || return "$?"
   VARIABLES_NAME_COUNT="${#VARIABLES_NAMES[@]}"
+
+  # Extra column for rows names
+  table_set_columns "${TABLE_NAME_FOR_SCRIPT_02}" "$((VARIABLES_NAME_COUNT + 1))" || return "$?"
+
+  local column_id=0
+  table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02}" "0" "$((column_id++))" "" || return "$?"
+
+  local variable_name
+  for variable_name in "${VARIABLES_NAMES[@]}"; do
+    table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02}" "0" "$((column_id++))" "${variable_name}" || return "$?"
+  done
+  table_add_separator_after_row "${TABLE_NAME_FOR_SCRIPT_02}" "0" || return "$?"
 
   return 0
 }

@@ -50,7 +50,10 @@ function table_get_rows() {
   local table_name="${1}" && shift
   variables_must_be_specified "table_name" || return "$?"
 
-  array_get "${TABLE_ROW_NUMBER_PREFIX}" "${table_name}" || return "$?"
+  local rows_number
+  rows_number="$(array_get "${TABLE_ROW_NUMBER_PREFIX}" "${table_name}")" || return "$?"
+
+  echo "${rows_number:-0}"
 
   return 0
 }

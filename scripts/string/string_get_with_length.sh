@@ -37,6 +37,7 @@ function get_text_hash() {
 }
 
 # Imports
+source "../messages.sh" || exit "$?"
 source "./string_cut_if_longer_than.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
@@ -55,7 +56,7 @@ function string_get_with_length() {
   # Maximum length
   local max_length="${1}" && shift
   if [[ -z ${max_length} ]]; then
-    bccsPrintError "Введите требуемую длину!"
+    print_error "Enter the required length!"
     return 1
   fi
 
