@@ -37,49 +37,29 @@ function get_text_hash() {
 }
 
 # Imports
-source "./_constants.sh" || exit "$?"
 source "../messages.sh" || exit "$?"
+source "./variables_must_be_specified.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
 {
   eval "cd \"\${source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")}\"" || exit "$?"
 }
 
-# Sets the value of a variable with the specified keys
-#
-# <Argument 1>: Variable keys
-# <Argument 2>: Variable value
-function array_set() {
-  # Number of arguments
-  # The last argument will always be the value of the variable
-  local args_amount="$#"
-  if ((args_amount < 2)); then
-    print_error "At least two arguments are required! The last value should be the assigned value for the variable. Before it you need to specify array keys. Number of arguments received: ${C_COMMAND}${args_amount}${C_RETURN}" || return "$?"
-    return 1
-  fi
+# Checks, if environment variable with provided name is not empty
+# If it is empty, prints message and returns 1
+# Otherwise, just returns 0
+function env_variables_must_be_specified() {
+  while [ "$#" -gt 0 ]; do
+    local variable_name="${1}" && shift
+    variables_must_be_specified "variable_name" || return "$?"
 
-  # Combined keys in one line
-  local result_keys=""
-  while [[ $# -gt 1 ]]; do
-    # Variable key
-    local key="${1}" && shift
-    result_keys+="${key}"
+    local variable_value
+    variable_value="$(eval "echo \"\${$variable_name}\"")" || return "$?"
+    if [ -z "${variable_value}" ]; then
+      print_error "You need to specify \"${variable_name}\" environment variable!" || return "$?"
+      return 1
+    fi
   done
-
-  # Hashed value of variable keys in one line
-  local result_keys_hashed
-  result_keys_hashed="$(get_text_hash "${result_keys}")" || return "$?"
-  # Use upper case letters
-  result_keys_hashed="${result_keys_hashed^^}"
-
-  # The final key of the variable
-  local result_variable_key="${ARRAY_PREFIX}${result_keys_hashed}"
-
-  # New variable value
-  local variable_value="${1//'"'/'\"'}" && shift
-
-  # Setting the value
-  eval "export ${result_variable_key}=\"${variable_value}\"" || return "$?"
 
   return 0
 }
@@ -87,6 +67,6 @@ function array_set() {
 # (REUSE) Add ability to execute script by itself (for debugging)
 {
   if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
-    array_set "$@" || exit "$?"
+    env_variables_must_be_specified "$@" || exit "$?"
   fi
 }

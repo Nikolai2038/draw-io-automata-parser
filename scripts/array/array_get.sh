@@ -37,7 +37,8 @@ function get_text_hash() {
 }
 
 # Imports
-source "../messages.sh" || return "$?"
+source "./_constants.sh" || exit "$?"
+source "../messages.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
 {
@@ -52,6 +53,7 @@ function array_get() {
   local args_amount="$#"
   if ((args_amount == 0)); then
     print_error "It is required to enter at least one variable key!" || return "$?"
+    return 1
   fi
 
   # Combined keys in one line
@@ -69,7 +71,7 @@ function array_get() {
   result_keys_hashed="${result_keys_hashed^^}"
 
   # The final key of the variable
-  local result_variable_key="ARRAY_VALUE_${result_keys_hashed}"
+  local result_variable_key="${ARRAY_PREFIX}${result_keys_hashed}"
 
   # Getting the value
   eval "echo \"\$${result_variable_key}\"" || return "$?"

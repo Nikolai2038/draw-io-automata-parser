@@ -37,56 +37,11 @@ function get_text_hash() {
 }
 
 # Imports
-source "./_constants.sh" || exit "$?"
-source "../messages.sh" || exit "$?"
+# ...
 
 # (REUSE) Prepare after imports
 {
   eval "cd \"\${source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")}\"" || exit "$?"
 }
 
-# Sets the value of a variable with the specified keys
-#
-# <Argument 1>: Variable keys
-# <Argument 2>: Variable value
-function array_set() {
-  # Number of arguments
-  # The last argument will always be the value of the variable
-  local args_amount="$#"
-  if ((args_amount < 2)); then
-    print_error "At least two arguments are required! The last value should be the assigned value for the variable. Before it you need to specify array keys. Number of arguments received: ${C_COMMAND}${args_amount}${C_RETURN}" || return "$?"
-    return 1
-  fi
-
-  # Combined keys in one line
-  local result_keys=""
-  while [[ $# -gt 1 ]]; do
-    # Variable key
-    local key="${1}" && shift
-    result_keys+="${key}"
-  done
-
-  # Hashed value of variable keys in one line
-  local result_keys_hashed
-  result_keys_hashed="$(get_text_hash "${result_keys}")" || return "$?"
-  # Use upper case letters
-  result_keys_hashed="${result_keys_hashed^^}"
-
-  # The final key of the variable
-  local result_variable_key="${ARRAY_PREFIX}${result_keys_hashed}"
-
-  # New variable value
-  local variable_value="${1//'"'/'\"'}" && shift
-
-  # Setting the value
-  eval "export ${result_variable_key}=\"${variable_value}\"" || return "$?"
-
-  return 0
-}
-
-# (REUSE) Add ability to execute script by itself (for debugging)
-{
-  if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
-    array_set "$@" || exit "$?"
-  fi
-}
+export ARRAY_PREFIX="ARRAY_VALUE_"
