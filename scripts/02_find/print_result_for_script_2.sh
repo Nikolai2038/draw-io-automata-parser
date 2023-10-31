@@ -144,7 +144,6 @@ function print_result_for_script_2() {
     done
   done
 
-  table_set_rows "${TABLE_NAME_FOR_SCRIPT_02}" "${combinations_count}" || return "$?"
   table_print "${TABLE_NAME_FOR_SCRIPT_02}" || return "$?"
 
   return 0

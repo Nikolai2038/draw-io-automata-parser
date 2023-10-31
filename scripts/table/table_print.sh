@@ -43,8 +43,8 @@ source "../array/array_get.sh" || exit "$?"
 source "../string/string_get_with_length.sh" || exit "$?"
 source "./table_get_column_width.sh" || exit "$?"
 source "./table_get_cell_value.sh" || exit "$?"
-source "./table_get_columns.sh" || exit "$?"
-source "./table_get_rows.sh" || exit "$?"
+source "./table_get_columns_number.sh" || exit "$?"
+source "./table_get_rows_number.sh" || exit "$?"
 source "./table_is_separator_after_row.sh" || exit "$?"
 source "../string/string_repeat_symbol.sh" || exit "$?"
 
@@ -58,14 +58,14 @@ function table_print() {
   variables_must_be_specified "table_name" || return "$?"
 
   local rows_number
-  rows_number="$(table_get_rows "${table_name}")" || return "$?"
+  rows_number="$(table_get_rows_number "${table_name}")" || return "$?"
   if [ -z "${rows_number}" ]; then
     print_error "You must define rows number first!" || return "$?"
     return 1
   fi
 
   local columns_number
-  columns_number="$(table_get_columns "${table_name}")" || return "$?"
+  columns_number="$(table_get_columns_number "${table_name}")" || return "$?"
   if [ -z "${columns_number}" ]; then
     print_error "You must define columns number first!" || return "$?"
     return 1

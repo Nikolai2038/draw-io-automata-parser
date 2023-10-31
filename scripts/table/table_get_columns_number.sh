@@ -39,19 +39,21 @@ function get_text_hash() {
 # Imports
 source "./_constants.sh" || exit "$?"
 source "../variable/variables_must_be_specified.sh" || exit "$?"
-source "../array/array_set.sh" || exit "$?"
+source "../array/array_get.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
 {
   eval "cd \"\${source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")}\"" || exit "$?"
 }
 
-function table_set_columns() {
+function table_get_columns_number() {
   local table_name="${1}" && shift
-  local columns_number="${1}" && shift
-  variables_must_be_specified "table_name" "columns_number" || return "$?"
+  variables_must_be_specified "table_name" || return "$?"
 
-  array_set "${TABLE_COLUMN_NUMBER_PREFIX}" "${table_name}" "${columns_number}" || return "$?"
+  local columns_number
+  columns_number="$(array_get "${TABLE_COLUMN_NUMBER_PREFIX}" "${table_name}")" || return "$?"
+
+  echo "${columns_number:-0}"
 
   return 0
 }
@@ -59,6 +61,6 @@ function table_set_columns() {
 # (REUSE) Add ability to execute script by itself (for debugging)
 {
   if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
-    table_set_columns "$@" || exit "$?"
+    table_get_columns_number "$@" || exit "$?"
   fi
 }

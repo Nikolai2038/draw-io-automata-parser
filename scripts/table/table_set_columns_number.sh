@@ -46,12 +46,12 @@ source "../array/array_set.sh" || exit "$?"
   eval "cd \"\${source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")}\"" || exit "$?"
 }
 
-function table_set_rows() {
+function table_set_columns_number() {
   local table_name="${1}" && shift
-  local rows_number="${1}" && shift
-  variables_must_be_specified "table_name" "rows_number" || return "$?"
+  local columns_number="${1}" && shift
+  variables_must_be_specified "table_name" "columns_number" || return "$?"
 
-  array_set "${TABLE_ROW_NUMBER_PREFIX}" "${table_name}" "${rows_number}" || return "$?"
+  array_set "${TABLE_COLUMN_NUMBER_PREFIX}" "${table_name}" "${columns_number}" || return "$?"
 
   return 0
 }
@@ -59,6 +59,6 @@ function table_set_rows() {
 # (REUSE) Add ability to execute script by itself (for debugging)
 {
   if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
-    table_set_rows "$@" || exit "$?"
+    table_set_columns_number "$@" || exit "$?"
   fi
 }

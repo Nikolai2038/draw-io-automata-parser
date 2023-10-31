@@ -46,14 +46,14 @@ source "../array/array_get.sh" || exit "$?"
   eval "cd \"\${source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")}\"" || exit "$?"
 }
 
-function table_get_columns() {
+function table_get_rows_number() {
   local table_name="${1}" && shift
   variables_must_be_specified "table_name" || return "$?"
 
-  local columns_number
-  columns_number="$(array_get "${TABLE_COLUMN_NUMBER_PREFIX}" "${table_name}")" || return "$?"
+  local rows_number
+  rows_number="$(array_get "${TABLE_ROW_NUMBER_PREFIX}" "${table_name}")" || return "$?"
 
-  echo "${columns_number:-0}"
+  echo "${rows_number:-0}"
 
   return 0
 }
@@ -61,6 +61,6 @@ function table_get_columns() {
 # (REUSE) Add ability to execute script by itself (for debugging)
 {
   if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
-    table_get_columns "$@" || exit "$?"
+    table_get_rows_number "$@" || exit "$?"
   fi
 }

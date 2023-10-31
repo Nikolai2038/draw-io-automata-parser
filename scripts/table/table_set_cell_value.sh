@@ -42,6 +42,10 @@ source "../variable/variables_must_be_specified.sh" || exit "$?"
 source "../array/array_set.sh" || exit "$?"
 source "./table_get_column_width.sh" || exit "$?"
 source "./table_set_column_width.sh" || exit "$?"
+source "./table_get_rows_number.sh" || exit "$?"
+source "./table_set_rows_number.sh" || exit "$?"
+source "./table_get_columns_number.sh" || exit "$?"
+source "./table_set_columns_number.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
 {
@@ -59,10 +63,21 @@ function table_set_cell_value() {
 
   local column_width
   column_width="$(table_get_column_width "${table_name}" "${column_id}")" || return "$?"
-
   local cell_width="${#cell_value}"
   if ((cell_width > column_width)); then
     table_set_column_width "${table_name}" "${column_id}" "${cell_width}" || return "$?"
+  fi
+
+  local rows_number
+  rows_number="$(table_get_rows_number "${table_name}")" || return "$?"
+  if ((row_id + 1 > rows_number)); then
+    table_set_rows_number "${table_name}" "$((row_id + 1))" || return "$?"
+  fi
+
+  local columns_number
+  columns_number="$(table_get_columns_number "${table_name}")" || return "$?"
+  if ((column_id + 1 > columns_number)); then
+    table_set_columns_number "${table_name}" "$((column_id + 1))" || return "$?"
   fi
 
   return 0

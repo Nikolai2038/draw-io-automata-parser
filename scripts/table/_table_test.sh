@@ -37,8 +37,8 @@ function get_text_hash() {
 }
 
 # Imports
-source "./table_set_rows.sh" || exit "$?"
-source "./table_set_columns.sh" || exit "$?"
+source "./table_set_rows_number.sh" || exit "$?"
+source "./table_set_columns_number.sh" || exit "$?"
 source "./table_set_cell_value.sh" || exit "$?"
 source "./table_print.sh" || exit "$?"
 source "./table_add_separator_after_row.sh" || exit "$?"
@@ -52,9 +52,6 @@ function _table_test() {
   local table_name="test"
   local rows_number=1
   local columns_number=5
-
-  table_set_rows "${table_name}" "${rows_number}" || return "$?"
-  table_set_columns "${table_name}" "${columns_number}" || return "$?"
 
   local row_id
   for ((row_id = 0; row_id < rows_number; row_id++)); do
