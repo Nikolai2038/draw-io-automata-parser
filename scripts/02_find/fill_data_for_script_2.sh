@@ -37,26 +37,12 @@ function get_text_hash() {
 }
 
 # Imports
-# ...
+source "./_constants.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
 {
   eval "cd \"\${source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")}\"" || exit "$?"
 }
-
-export VARIABLES_NAMES
-declare -a VARIABLES_NAMES=()
-export VARIABLES_NAME_COUNT=0
-
-export ELLIPSES_NAMES
-declare -a ELLIPSES_NAMES=()
-export ELLIPSES_NAME_COUNT=0
-
-export SINGLE_ARROW="ε"
-export SINGLE_ARROW_REPLACEMENT="EEEEE"
-
-export CAN_GO_TO_ELLIPSE_FOR_VALUE
-declare -A CAN_GO_TO_ELLIPSE_FOR_VALUE=()
 
 function fill_data_for_script_2() {
   local ellipse_id_in_list

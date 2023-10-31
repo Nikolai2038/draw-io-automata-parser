@@ -38,21 +38,12 @@ function get_text_hash() {
 
 # Imports
 source "../messages.sh" || exit "$?"
+source "./_constants.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
 {
   eval "cd \"\${source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")}\"" || exit "$?"
 }
-
-export CLASS_FAMILY_SYMBOL="K"
-
-export CLASS_FAMILIES
-declare -A CLASS_FAMILIES=()
-
-export CLASS_SYMBOLS
-declare -a CLASS_SYMBOLS=({A..Z})
-
-export CLASS_SYMBOLS_COUNT="${#CLASS_SYMBOLS[@]}"
 
 function class_family_calculate() {
   local ellipses_values_as_string="${1}" && shift

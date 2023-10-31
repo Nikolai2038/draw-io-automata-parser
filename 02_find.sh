@@ -47,8 +47,8 @@ source "./scripts/xpath/fill_lambda_and_delta_and_variables_names.sh" || exit "$
 source "./scripts/01_find_minimal/class_family_calculate.sh" || exit "$?"
 source "./scripts/01_find_minimal/class_family_print.sh" || exit "$?"
 source "./scripts/01_find_minimal/print_calculations_result.sh" || exit "$?"
-source "./scripts/01_find_minimal/fill_data_for_script_2.sh" || exit "$?"
-source "./scripts/01_find_minimal/print_result_for_script_2.sh" || exit "$?"
+source "./scripts/02_find/fill_data_for_script_2.sh" || exit "$?"
+source "./scripts/02_find/print_result_for_script_2.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
 {

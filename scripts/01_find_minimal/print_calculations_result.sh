@@ -39,35 +39,12 @@ function get_text_hash() {
 # Imports
 source "../messages.sh" || exit "$?"
 source "./class_family_print.sh" || exit "$?"
+source "./_constants.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
 {
   eval "cd \"\${source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")}\"" || exit "$?"
 }
-
-# Tab size when printing in terminal
-export TAB_SIZE=7
-tabs -${TAB_SIZE}
-
-export TABLE_BEFORE_CELL_VALUE=" "
-export TABLE_AFTER_CELL_VALUE="\t"
-export TABLE_EMPTY_CELL_VALUE="?"
-export TABLE_EMPTY_CELL_HEADER=" "
-
-export BOLD_LINE="================================================================================"
-export BORDER_SYMBOL="|"
-export TABLE_HORIZONTAL_BORDER_SYMBOL="-"
-
-export MIN="min"
-
-export LAMBDA="λ"
-export DELTA="δ"
-
-export LAMBDA_MIN="${LAMBDA}${MIN}"
-export DELTA_MIN="${DELTA}${MIN}"
-
-export SYMBOL_ELLIPSES_VALUES="S"
-export SYMBOL_START_ELLIPSE_VALUE="u0"
 
 function print_calculations_result() {
   local was_error="${1:-0}" && shift

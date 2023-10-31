@@ -37,14 +37,12 @@ function get_text_hash() {
 }
 
 # Imports
-# ...
+source "./_constants.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
 {
   eval "cd \"\${source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")}\"" || exit "$?"
 }
-
-export EMPTY_SPACE_SYMBOL="∅"
 
 function print_with_delimiter() {
   local delimiter="${1}" && shift

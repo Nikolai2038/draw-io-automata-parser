@@ -44,41 +44,20 @@ function get_text_hash() {
   eval "cd \"\${source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")}\"" || exit "$?"
 }
 
-export TABLE_NAME_FOR_SCRIPT_01="TABLE_NAME_FOR_SCRIPT_01"
+export TABLE_NAME_FOR_SCRIPT_02="TABLE_NAME_FOR_SCRIPT_02"
 
-export CLASS_FAMILY_SYMBOL="K"
+export VARIABLES_NAMES
+declare -a VARIABLES_NAMES=()
+export VARIABLES_NAME_COUNT=0
 
-export CLASS_FAMILIES
-declare -A CLASS_FAMILIES=()
+export ELLIPSES_NAMES
+declare -a ELLIPSES_NAMES=()
+export ELLIPSES_NAME_COUNT=0
 
-export CLASS_SYMBOLS
-declare -a CLASS_SYMBOLS=({A..Z})
+export SINGLE_ARROW="ε"
+export SINGLE_ARROW_REPLACEMENT="EEEEE"
 
-export CLASS_SYMBOLS_COUNT="${#CLASS_SYMBOLS[@]}"
+export CAN_GO_TO_ELLIPSE_FOR_VALUE
+declare -A CAN_GO_TO_ELLIPSE_FOR_VALUE=()
 
-export DO_NOT_PRINT_CLASS_FAMILY_ID=0
-export DO_PRINT_CLASS_FAMILY_ID=1
-
-# Tab size when printing in terminal
-export TAB_SIZE=7
-tabs -${TAB_SIZE}
-
-export TABLE_BEFORE_CELL_VALUE=" "
-export TABLE_AFTER_CELL_VALUE="\t"
-export TABLE_EMPTY_CELL_VALUE="?"
-export TABLE_EMPTY_CELL_HEADER=" "
-
-export BOLD_LINE="================================================================================"
-export BORDER_SYMBOL="|"
-export TABLE_HORIZONTAL_BORDER_SYMBOL="-"
-
-export MIN="min"
-
-export LAMBDA="λ"
-export DELTA="δ"
-
-export LAMBDA_MIN="${LAMBDA}${MIN}"
-export DELTA_MIN="${DELTA}${MIN}"
-
-export SYMBOL_ELLIPSES_VALUES="S"
-export SYMBOL_START_ELLIPSE_VALUE="u0"
+export EMPTY_SPACE_SYMBOL="∅"

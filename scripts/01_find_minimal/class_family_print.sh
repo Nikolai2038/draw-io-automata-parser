@@ -38,14 +38,12 @@ function get_text_hash() {
 
 # Imports
 source "../messages.sh" || exit "$?"
+source "./_constants.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
 {
   eval "cd \"\${source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")}\"" || exit "$?"
 }
-
-export DO_NOT_PRINT_CLASS_FAMILY_ID=0
-export DO_PRINT_CLASS_FAMILY_ID=1
 
 function class_family_print() {
   local class_family_id="${1}" && shift
