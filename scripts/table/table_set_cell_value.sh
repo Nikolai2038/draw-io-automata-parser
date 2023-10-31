@@ -40,6 +40,8 @@ function get_text_hash() {
 source "./_constants.sh" || exit "$?"
 source "../variable/variables_must_be_specified.sh" || exit "$?"
 source "../array/array_set.sh" || exit "$?"
+source "./table_get_column_width.sh" || exit "$?"
+source "./table_set_column_width.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
 {
@@ -51,9 +53,17 @@ function table_set_cell_value() {
   local row_id="${1}" && shift
   local column_id="${1}" && shift
   local cell_value="${1}" && shift
-  variables_must_be_specified "table_name" "row_id" "column_id" "cell_value" || return "$?"
+  variables_must_be_specified "table_name" "row_id" "column_id" || return "$?"
 
   array_set "${TABLE_CELL_PREFIX}" "${table_name}" "${row_id}" "${column_id}" "${cell_value}" || return "$?"
+
+  local column_max_width
+  column_max_width="$(table_get_column_width "${table_name}" "${column_id}")" || return "$?"
+
+  local cell_width="${#cell_value}"
+  if ((cell_width > column_max_width)); then
+    table_set_column_width "${table_name}" "${column_id}" "${cell_width}" || return "$?"
+  fi
 
   return 0
 }

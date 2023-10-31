@@ -48,7 +48,7 @@ source "./string_cut_if_longer_than.sh" || exit "$?"
 #
 # <Argument 1>: String
 # <Argument 2>: Required length
-function get_with_length() {
+function string_get_with_length() {
   # String itself
   local text="${1}" && shift
 
@@ -78,6 +78,6 @@ function get_with_length() {
 # (REUSE) Add ability to execute script by itself (for debugging)
 {
   if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
-    get_with_length "$@" || exit "$?"
+    string_get_with_length "$@" || exit "$?"
   fi
 }

@@ -46,11 +46,12 @@ source "../array/array_get.sh" || exit "$?"
   eval "cd \"\${source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")}\"" || exit "$?"
 }
 
-function table_get_columns() {
+function table_get_column_width() {
   local table_name="${1}" && shift
-  variables_must_be_specified "table_name" || return "$?"
+  local column_id="${1}" && shift
+  variables_must_be_specified "table_name" "column_id" || return "$?"
 
-  array_get "${TABLE_COLUMN_NUMBER_PREFIX}" "${table_name}" || return "$?"
+  array_get "${TABLE_COLUMN_MAX_WIDTH_PREFIX}" "${table_name}" "${column_id}" || return "$?"
 
   return 0
 }
@@ -58,6 +59,6 @@ function table_get_columns() {
 # (REUSE) Add ability to execute script by itself (for debugging)
 {
   if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
-    table_get_columns "$@" || exit "$?"
+    table_get_column_width "$@" || exit "$?"
   fi
 }
