@@ -57,15 +57,15 @@ function fill_lambda_and_delta_and_variables_names() {
     print_info "Calculate data for ellipse with value ${C_HIGHLIGHT}${ellipse_value}${C_RETURN}!"
 
     local arrows_from_ellipse
-    arrows_from_ellipse="$(get_node_with_attribute_value "${CONNECTED_ARROWS_XML}" "${ATTRIBUTE_SOURCE}" "${ellipse_id}")" || return "$?"
+    arrows_from_ellipse="$(get_node_with_attribute_value "${CONNECTED_ARROWS_XML}" "mxCell" "${ATTRIBUTE_SOURCE}" "${ellipse_id}")" || return "$?"
     local arrows_from_ellipse_count
-    arrows_from_ellipse_count="$(get_nodes_count "${arrows_from_ellipse}")" || return "$?"
+    arrows_from_ellipse_count="$(get_nodes_count "${arrows_from_ellipse}" "mxCell")" || return "$?"
     if ((arrows_from_ellipse_count < 1)); then
       continue
     fi
 
     local arrow_ids_as_string
-    arrow_ids_as_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_ID}")" || return "$?"
+    arrow_ids_as_string="$(get_node_attribute_value "${arrows_from_ellipse}" "mxCell" "${ATTRIBUTE_ID}")" || return "$?"
     if [ -z "${arrow_ids_as_string}" ]; then
       print_error "Arrow ids as string is empty!" || return "$?"
       return 1
@@ -76,12 +76,12 @@ function fill_lambda_and_delta_and_variables_names() {
     # Arrows values can be specified in arrow itself, or in separate label.
     # We check first arrow value, and if it is empty, we seek for its label.
     local arrow_values_as_string
-    arrow_values_as_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_VALUE}")"
+    arrow_values_as_string="$(get_node_attribute_value "${arrows_from_ellipse}" "mxCell" "${ATTRIBUTE_VALUE}")"
     declare -a arrow_values
     mapfile -t arrow_values <<< "${arrow_values_as_string}" || return "$?"
 
     local arrow_targets_ids_string
-    arrow_targets_ids_string="$(get_node_attribute_value "${arrows_from_ellipse}" "${ATTRIBUTE_TARGET}")"
+    arrow_targets_ids_string="$(get_node_attribute_value "${arrows_from_ellipse}" "mxCell" "${ATTRIBUTE_TARGET}")"
     declare -a arrow_targets_ids
     mapfile -t arrow_targets_ids <<< "${arrow_targets_ids_string}" || return "$?"
 
@@ -94,10 +94,10 @@ function fill_lambda_and_delta_and_variables_names() {
         local arrow_id="${arrow_ids["${arrow_id_in_list}"]}"
 
         local arrow_label_xml
-        arrow_label_xml="$(get_node_with_attribute_value "${arrows_labels_xml}" "${ATTRIBUTE_PARENT}" "${arrow_id}")" || return "$?"
+        arrow_label_xml="$(get_node_with_attribute_value "${arrows_labels_xml}" "mxCell" "${ATTRIBUTE_PARENT}" "${arrow_id}")" || return "$?"
 
         local arrow_value
-        arrow_value="$(get_node_attribute_value "${arrow_label_xml}" "${ATTRIBUTE_VALUE}")" || return "$?"
+        arrow_value="$(get_node_attribute_value "${arrow_label_xml}" "mxCell" "${ATTRIBUTE_VALUE}")" || return "$?"
       fi
 
       if [ -z "${arrow_value}" ]; then
@@ -109,9 +109,9 @@ function fill_lambda_and_delta_and_variables_names() {
 
       local arrow_target_id="${arrow_targets_ids["${arrow_id_in_list}"]}"
       local arrow_target_node
-      arrow_target_node="$(get_node_with_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_ID}" "${arrow_target_id}")" || return "$?"
+      arrow_target_node="$(get_node_with_attribute_value "${XML_ELLIPSES}" "mxCell" "${ATTRIBUTE_ID}" "${arrow_target_id}")" || return "$?"
       local arrow_target_value
-      arrow_target_value="$(get_node_attribute_value "${arrow_target_node}" "${ATTRIBUTE_VALUE}")" || return "$?"
+      arrow_target_value="$(get_node_attribute_value "${arrow_target_node}" "mxCell" "${ATTRIBUTE_VALUE}")" || return "$?"
 
       local arrow_variable_regexpr='([^\/]+)\/([^\/]+)'
 

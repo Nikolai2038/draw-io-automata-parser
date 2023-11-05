@@ -38,6 +38,7 @@ function get_text_hash() {
 
 # Imports
 source "../messages.sh" || exit "$?"
+source "../variable/variables_must_be_specified.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
 {
@@ -51,13 +52,11 @@ function get_node_attribute_value() {
     return 0
   fi
 
+  local tag="${1}" && shift
   local attribute_name="${1}" && shift
-  if [ -z "${attribute_name}" ]; then
-    print_error "You need to specify attribute name!"
-    return 1
-  fi
+  variables_must_be_specified "tag" "attribute_name" || return "$?"
 
-  echo "<xml>${xml}</xml>" | xpath -q -e "(//mxCell)/@${attribute_name}" | sed -E "s/^ ${attribute_name}=\"([^\"]+)\"\$/\\1/" || return "$?"
+  echo "<xml>${xml}</xml>" | xpath -q -e "(//${tag})/@${attribute_name}" | sed -E "s/^ ${attribute_name}=\"([^\"]+)\"\$/\\1/" || return "$?"
 
   return 0
 }

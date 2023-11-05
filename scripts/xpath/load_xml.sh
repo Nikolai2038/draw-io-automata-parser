@@ -84,7 +84,7 @@ function load_xml() {
     //mxCell
   ")" || return "$?"
   local elements_count
-  elements_count="$(get_nodes_count "${xml_elements}")" || return "$?"
+  elements_count="$(get_nodes_count "${xml_elements}" "mxCell")" || return "$?"
 
   if ((elements_count < 1)); then
     print_error "No elements found!"
@@ -101,7 +101,7 @@ function load_xml() {
       starts-with(@style, "ellipse;")
     ]
   ')" || return "$?"
-  ELLIPSES_COUNT="$(get_nodes_count "${XML_ELLIPSES}")" || return "$?"
+  ELLIPSES_COUNT="$(get_nodes_count "${XML_ELLIPSES}" "mxCell")" || return "$?"
 
   if ((ELLIPSES_COUNT < 1)); then
     print_error "No ellipses found!"
@@ -120,7 +120,7 @@ function load_xml() {
     ]
   ')" || return "$?"
   local arrows_count
-  arrows_count="$(get_nodes_count "${arrows_xml}")" || return "$?"
+  arrows_count="$(get_nodes_count "${arrows_xml}" "mxCell")" || return "$?"
 
   if ((arrows_count < 1)); then
     print_error "No arrows found!"
@@ -139,7 +139,7 @@ function load_xml() {
     ]
   ')" || return "$?"
   local arrows_labels_count
-  arrows_labels_count="$(get_nodes_count "${arrows_labels_xml}")" || return "$?"
+  arrows_labels_count="$(get_nodes_count "${arrows_labels_xml}" "mxCell")" || return "$?"
   print_success "Found ${C_HIGHLIGHT}${arrows_labels_count}${C_RETURN} label arrows!"
   # ----------------------------------------
 
@@ -155,7 +155,7 @@ function load_xml() {
     ]
   ")" || return "$?"
   local start_arrows_count
-  start_arrows_count="$(get_nodes_count "${start_arrows_xml}")" || return "$?"
+  start_arrows_count="$(get_nodes_count "${start_arrows_xml}" "mxCell")" || return "$?"
 
   if ((start_arrows_count < 1)); then
     print_error "No start arrow found! You need to create arrow with no source but connect it to some ellipse."
@@ -171,7 +171,7 @@ function load_xml() {
 
   # Find first ellipsis id
   local start_arrow_target_id
-  start_arrow_target_id="$(get_node_attribute_value "${start_arrow_xml}" "${ATTRIBUTE_TARGET}")" || return "$?"
+  start_arrow_target_id="$(get_node_attribute_value "${start_arrow_xml}" "mxCell" "${ATTRIBUTE_TARGET}")" || return "$?"
   if [ -z "${start_arrow_target_id}" ]; then
     print_error "Start arrow ID is empty!"
     return 1
@@ -179,10 +179,10 @@ function load_xml() {
 
   # Find first ellipsis node
   export START_ARROW_TARGET
-  START_ARROW_TARGET="$(get_node_with_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_ID}" "${start_arrow_target_id}")" || return "$?"
+  START_ARROW_TARGET="$(get_node_with_attribute_value "${XML_ELLIPSES}" "mxCell" "${ATTRIBUTE_ID}" "${start_arrow_target_id}")" || return "$?"
 
   export START_ARROW_TARGET_VALUE
-  START_ARROW_TARGET_VALUE="$(get_node_attribute_value "${START_ARROW_TARGET}" "${ATTRIBUTE_VALUE}")" || return "$?"
+  START_ARROW_TARGET_VALUE="$(get_node_attribute_value "${START_ARROW_TARGET}" "mxCell" "${ATTRIBUTE_VALUE}")" || return "$?"
   # ----------------------------------------
 
   # ----------------------------------------
@@ -207,10 +207,10 @@ function load_xml() {
 
   if [ -n "${disconnected_arrows_xml}" ]; then
     local disconnected_arrows_count
-    disconnected_arrows_count="$(get_nodes_count "${disconnected_arrows_xml}")" || return "$?"
+    disconnected_arrows_count="$(get_nodes_count "${disconnected_arrows_xml}" "mxCell")" || return "$?"
     if ((disconnected_arrows_count > 0)); then
       print_error "Found ${disconnected_arrows_count} disconnected arrows! IDs:"
-      get_node_attribute_value "${disconnected_arrows_xml}" "${ATTRIBUTE_ID}"
+      get_node_attribute_value "${disconnected_arrows_xml}" "mxCell" "${ATTRIBUTE_ID}"
       return 1
     fi
   fi
@@ -228,7 +228,7 @@ function load_xml() {
     ]
   ")" || return "$?"
   local connected_arrows_count
-  connected_arrows_count="$(get_nodes_count "${CONNECTED_ARROWS_XML}")" || return "$?"
+  connected_arrows_count="$(get_nodes_count "${CONNECTED_ARROWS_XML}" "mxCell")" || return "$?"
 
   if ((connected_arrows_count < 1)); then
     print_error "No connected arrows found!"
@@ -241,14 +241,14 @@ function load_xml() {
   # Ellipses attributes
   # ----------------------------------------
   local ellipses_ids_as_string
-  ellipses_ids_as_string="$(get_node_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_ID}")" || return "$?"
+  ellipses_ids_as_string="$(get_node_attribute_value "${XML_ELLIPSES}" "mxCell" "${ATTRIBUTE_ID}")" || return "$?"
   if [ -z "${ellipses_ids_as_string}" ]; then
     print_error "Ellipses ids as string is empty!"
     return 1
   fi
   mapfile -t ELLIPSES_IDS <<< "${ellipses_ids_as_string}" || return "$?"
 
-  ELLIPSES_VALUES_AS_STRING="$(get_node_attribute_value "${XML_ELLIPSES}" "${ATTRIBUTE_VALUE}")" || return "$?"
+  ELLIPSES_VALUES_AS_STRING="$(get_node_attribute_value "${XML_ELLIPSES}" "mxCell" "${ATTRIBUTE_VALUE}")" || return "$?"
   if [ -z "${ELLIPSES_VALUES_AS_STRING}" ]; then
     print_error "Ellipses values as string is empty!"
     return 1

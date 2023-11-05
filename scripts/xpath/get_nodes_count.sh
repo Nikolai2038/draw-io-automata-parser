@@ -38,6 +38,7 @@ function get_text_hash() {
 
 # Imports
 source "../messages.sh" || exit "$?"
+source "../variable/variables_must_be_specified.sh" || exit "$?"
 
 # (REUSE) Prepare after imports
 {
@@ -51,7 +52,10 @@ function get_nodes_count() {
     return 0
   fi
 
-  echo "<xml>${xml}</xml>" | xpath -q -e "count(//mxCell)" || return "$?"
+  local tag="${1}" && shift
+  variables_must_be_specified "tag" || return "$?"
+
+  echo "<xml>${xml}</xml>" | xpath -q -e "count(//${tag})" || return "$?"
 
   return 0
 }

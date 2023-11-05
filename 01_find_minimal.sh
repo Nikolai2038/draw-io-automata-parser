@@ -206,7 +206,7 @@ function automata_parser() {
   # Calculate start ellipse of input automate
   # ----------------------------------------
   export INPUT_AUTOMATE_START_ELLIPSE_VALUE
-  INPUT_AUTOMATE_START_ELLIPSE_VALUE="$(get_node_attribute_value "${START_ARROW_TARGET}" "${ATTRIBUTE_VALUE}")" || return "$?"
+  INPUT_AUTOMATE_START_ELLIPSE_VALUE="$(get_node_attribute_value "${START_ARROW_TARGET}" "mxCell" "${ATTRIBUTE_VALUE}")" || return "$?"
   # ----------------------------------------
 
   # ----------------------------------------
