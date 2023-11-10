@@ -50,79 +50,109 @@ source "../array/array_set.sh" || exit "$?"
   eval "cd \"\${source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")}\"" || exit "$?"
 }
 
-function fill_data_for_script_2() {
-  local ellipse_id_in_list
-  for ((ellipse_id_in_list = 0; ellipse_id_in_list < ELLIPSES_COUNT; ellipse_id_in_list++)); do
-    local ellipse_id="${ELLIPSES_IDS["${ellipse_id_in_list}"]}"
-    local ellipse_value="${ELLIPSES_VALUES["${ellipse_id_in_list}"]}"
+function fill_variables_for_ellipse() {
+  local ellipse_id="${1}" && shift
 
-    local arrows_from_ellipse
-    arrows_from_ellipse="$(get_node_with_attribute_value "${CONNECTED_ARROWS_XML}" "mxCell" "${ATTRIBUTE_SOURCE}" "${ellipse_id}")" || return "$?"
-    local arrows_from_ellipse_count
-    arrows_from_ellipse_count="$(get_nodes_count "${arrows_from_ellipse}" "mxCell")" || return "$?"
-    if ((arrows_from_ellipse_count < 1)); then
-      continue
+  # If we find "ε" arrow, we need to set variables to previous ellipse, so we use this variable
+  local ellipse_to_add_id="${1:-"${ellipse_id}"}" && shift
+
+  local ellipse_xml
+  ellipse_xml="$(get_node_with_attribute_value "${XML_ELLIPSES}" "mxCell" "${ATTRIBUTE_ID}" "${ellipse_id}")" || return "$?"
+
+  local ellipse_value
+  ellipse_value="$(get_node_attribute_value "${ellipse_xml}" "mxCell" "${ATTRIBUTE_VALUE}")" || return "$?"
+
+  local arrows_from_ellipse
+  arrows_from_ellipse="$(get_node_with_attribute_value "${CONNECTED_ARROWS_XML}" "mxCell" "${ATTRIBUTE_SOURCE}" "${ellipse_id}")" || return "$?"
+  local arrows_from_ellipse_count
+  arrows_from_ellipse_count="$(get_nodes_count "${arrows_from_ellipse}" "mxCell")" || return "$?"
+  if ((arrows_from_ellipse_count < 1)); then
+    return 0
+  fi
+
+  local arrow_ids_as_string
+  arrow_ids_as_string="$(get_node_attribute_value "${arrows_from_ellipse}" "mxCell" "${ATTRIBUTE_ID}")" || return "$?"
+  if [ -z "${arrow_ids_as_string}" ]; then
+    print_error "Arrow ids as string is empty!" || return "$?"
+    return 1
+  fi
+  declare -a arrow_ids
+  mapfile -t arrow_ids <<< "${arrow_ids_as_string}" || return "$?"
+
+  # Arrows values can be specified in arrow itself, or in separate label.
+  # We check first arrow value, and if it is empty, we seek for its label.
+  local arrow_values_as_string
+  arrow_values_as_string="$(get_node_attribute_value "${arrows_from_ellipse}" "mxCell" "${ATTRIBUTE_VALUE}")"
+  declare -a arrow_values
+  mapfile -t arrow_values <<< "${arrow_values_as_string}" || return "$?"
+
+  local arrow_targets_ids_string
+  arrow_targets_ids_string="$(get_node_attribute_value "${arrows_from_ellipse}" "mxCell" "${ATTRIBUTE_TARGET}")"
+  declare -a arrow_targets_ids
+  mapfile -t arrow_targets_ids <<< "${arrow_targets_ids_string}" || return "$?"
+
+  # For each arrow from ellipse
+  local arrow_id_in_list
+  for ((arrow_id_in_list = 0; arrow_id_in_list < arrows_from_ellipse_count; arrow_id_in_list++)); do
+    local arrow_value="${arrow_values["${arrow_id_in_list}"]}"
+
+    # If arrow value is empty, we seek for its label.
+    if [ -z "${arrow_value}" ]; then
+      local arrow_id="${arrow_ids["${arrow_id_in_list}"]}"
+
+      local arrow_label_xml
+      arrow_label_xml="$(get_node_with_attribute_value "${arrows_labels_xml}" "mxCell" "${ATTRIBUTE_PARENT}" "${arrow_id}")" || return "$?"
+
+      local arrow_value
+      arrow_value="$(get_node_attribute_value "${arrow_label_xml}" "mxCell" "${ATTRIBUTE_VALUE}")" || return "$?"
     fi
 
-    local arrow_ids_as_string
-    arrow_ids_as_string="$(get_node_attribute_value "${arrows_from_ellipse}" "mxCell" "${ATTRIBUTE_ID}")" || return "$?"
-    if [ -z "${arrow_ids_as_string}" ]; then
-      print_error "Arrow ids as string is empty!" || return "$?"
+    if [ -z "${arrow_value}" ]; then
+      print_error "Value is empty for arrow from ellipse with value \"${ellipse_value}\"! You must add text to arrow in format \"<variable name>\"" || return "$?"
       return 1
     fi
-    declare -a arrow_ids
-    mapfile -t arrow_ids <<< "${arrow_ids_as_string}" || return "$?"
 
-    # Arrows values can be specified in arrow itself, or in separate label.
-    # We check first arrow value, and if it is empty, we seek for its label.
-    local arrow_values_as_string
-    arrow_values_as_string="$(get_node_attribute_value "${arrows_from_ellipse}" "mxCell" "${ATTRIBUTE_VALUE}")"
-    declare -a arrow_values
-    mapfile -t arrow_values <<< "${arrow_values_as_string}" || return "$?"
+    local arrow_target_id="${arrow_targets_ids["${arrow_id_in_list}"]}"
+    local arrow_target_node
+    arrow_target_node="$(get_node_with_attribute_value "${XML_ELLIPSES}" "mxCell" "${ATTRIBUTE_ID}" "${arrow_target_id}")" || return "$?"
+    local arrow_target_value
+    arrow_target_value="$(get_node_attribute_value "${arrow_target_node}" "mxCell" "${ATTRIBUTE_VALUE}")" || return "$?"
+    local arrow_target_id
+    arrow_target_id="$(get_node_attribute_value "${arrow_target_node}" "mxCell" "${ATTRIBUTE_ID}")" || return "$?"
 
-    local arrow_targets_ids_string
-    arrow_targets_ids_string="$(get_node_attribute_value "${arrows_from_ellipse}" "mxCell" "${ATTRIBUTE_TARGET}")"
-    declare -a arrow_targets_ids
-    mapfile -t arrow_targets_ids <<< "${arrow_targets_ids_string}" || return "$?"
+    # If we encountered "ε" we will fill this ellipse with variables for ellipse which arrow "ε" is pointing
+    if [ "${arrow_value}" == "${SINGLE_ARROW}" ]; then
+      fill_variables_for_ellipse "${arrow_target_id}" "${ellipse_id}" || return "$?"
+    else
+      local ellipse_to_add_xml
+      ellipse_to_add_xml="$(get_node_with_attribute_value "${XML_ELLIPSES}" "mxCell" "${ATTRIBUTE_ID}" "${ellipse_to_add_id}")" || return "$?"
 
-    local arrow_id_in_list
-    for ((arrow_id_in_list = 0; arrow_id_in_list < arrows_from_ellipse_count; arrow_id_in_list++)); do
-      local arrow_value="${arrow_values["${arrow_id_in_list}"]}"
-
-      # If arrow value is empty, we seek for its label.
-      if [ -z "${arrow_value}" ]; then
-        local arrow_id="${arrow_ids["${arrow_id_in_list}"]}"
-
-        local arrow_label_xml
-        arrow_label_xml="$(get_node_with_attribute_value "${arrows_labels_xml}" "mxCell" "${ATTRIBUTE_PARENT}" "${arrow_id}")" || return "$?"
-
-        local arrow_value
-        arrow_value="$(get_node_attribute_value "${arrow_label_xml}" "mxCell" "${ATTRIBUTE_VALUE}")" || return "$?"
-      fi
-
-      if [ -z "${arrow_value}" ]; then
-        print_error "Value is empty for arrow from ellipse with value \"${ellipse_value}\"! You must add text to arrow in format \"<variable name>\"" || return "$?"
-        return 1
-      fi
-
-      local arrow_target_id="${arrow_targets_ids["${arrow_id_in_list}"]}"
-      local arrow_target_node
-      arrow_target_node="$(get_node_with_attribute_value "${XML_ELLIPSES}" "mxCell" "${ATTRIBUTE_ID}" "${arrow_target_id}")" || return "$?"
-      local arrow_target_value
-      arrow_target_value="$(get_node_attribute_value "${arrow_target_node}" "mxCell" "${ATTRIBUTE_VALUE}")" || return "$?"
+      local ellipse_to_add_value
+      ellipse_to_add_value="$(get_node_attribute_value "${ellipse_to_add_xml}" "mxCell" "${ATTRIBUTE_VALUE}")" || return "$?"
 
       # Add new next ellipse available
       local current_value
-      current_value="$(array_get "${ARRAY_CAN_GO_TO_ELLIPSE_FOR_VALUE}" "${ellipse_value}" "${arrow_value}")" || return "$?"
+      current_value="$(array_get "${ARRAY_CAN_GO_TO_ELLIPSE_FOR_VALUE}" "${ellipse_to_add_value}" "${arrow_value}")" || return "$?"
       if [ -n "${current_value}" ]; then
         current_value+=" "
       fi
       current_value+="${arrow_target_value}"
-      array_set "${ARRAY_CAN_GO_TO_ELLIPSE_FOR_VALUE}" "${ellipse_value}" "${arrow_value}" "${current_value}" || return "$?"
+      array_set "${ARRAY_CAN_GO_TO_ELLIPSE_FOR_VALUE}" "${ellipse_to_add_value}" "${arrow_value}" "${current_value}" || return "$?"
 
       # Collecting all variables names into "variables_names" array
       VARIABLES_NAMES+=("${arrow_value}")
-    done
+    fi
+  done
+
+  return 0
+}
+
+function fill_data_for_script_2() {
+  # For each ellipse
+  local ellipse_id_in_list
+  for ((ellipse_id_in_list = 0; ellipse_id_in_list < ELLIPSES_COUNT; ellipse_id_in_list++)); do
+    local ellipse_id="${ELLIPSES_IDS["${ellipse_id_in_list}"]}"
+    fill_variables_for_ellipse "${ellipse_id}" || return "$?"
   done
 
   # Sort variables names
