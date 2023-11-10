@@ -24,29 +24,35 @@ This Bash-script allows you to find minimal automata for the represented one in 
    - All other arrows must have source and target (connect them to ellipses);
    - Add text to all arrows (except start arrow) with format `<variable name>/<variable value>`;
 
-3. Run main script:
+3. Run script:
 
     ```bash
     ./01_find_minimal.sh <file path>
     ```
+   
+   or:
+
+    ```bash
+    ./02_find_deterministic.sh <file path>
+    ```
 
 If you're having trouble with diagram created by yourself, try copying example diagram and modifying it instead.
 
-## Example
+## Example for script 1 - Find minimal automata
 
 1. Create diagram:
 
-   ![Input diagram](images/01_input_diagram.svg)
+   ![Input diagram](images_for_readme/script_01_example_01_input.svg)
 
 2. Save diagram as `XML file (.drawio)` (very important to save in XML because file will be parsed that way).
-   You can find this example in `./diagrams/examples` folder - file is called `01_example_input.drawio`.
+   You can find this example in `./diagrams/examples` folder - file is called `script_01_example_01_input.drawio`.
 
 3. Move file into `./diagrams` folder.
 
 4. Run script:
 
    ```bash
-   ./01_find_minimal.sh ./diagrams/examples/01_example_input.drawio
+   ./01_find_minimal.sh ./diagrams/examples/script_01_example_01_input.drawio
    ```
 
 5. Wait for calculations and done! The result will be printed in the console:
@@ -131,7 +137,73 @@ If you're having trouble with diagram created by yourself, try copying example d
 
 6. **[By hand]** Based on output, we can now draw minimal automata:
 
-   ![Result diagram](images/01_result_diagram.svg)
+   ![Result diagram](images_for_readme/script_01_example_01_result.svg)
+
+## Example for script 2 - Find DFA from NFA
+
+DFA - Deterministic Finite Automaton.
+
+NFA - Nondeterministic Finite Automaton.
+
+1. Create diagram:
+
+   ![Input diagram](images_for_readme/script_02_example_01_input.png)
+
+2. Save diagram as `XML file (.drawio)` (very important to save in XML because file will be parsed that way).
+   You can find this example in `./diagrams/examples` folder - file is called `script_02_example_01_input.drawio`.
+
+3. Move file into `./diagrams` folder.
+
+4. Run script:
+
+   ```bash
+   ./02_find_deterministic.sh ./diagrams/examples/script_02_example_01_input.drawio
+   ```
+
+5. Wait for calculations and done! The result will be printed in the console:
+
+   ```log
+   Welcome to Automata Parser!
+   Loading file diagrams/examples/11_example_input.drawio...
+   Found 31 elements!
+   Found 6 ellipses!
+   Found 12 arrows!
+   Found 11 label arrows!
+   Start arrow found!
+   No disconnected arrows found!
+   Found 11 connected arrows!
+   Loading file diagrams/examples/11_example_input.drawio: done!
+   Parsing...
+   Found last ellipse with value 6!
+   -----------------------------------
+   |         | a       | b       | l |
+   -----------------------------------
+   | {1}     | {2 5 6} | {2 5 6} | 0 |
+   | {2 5 6} | {3 6}   | {∅}     | 1 |
+   | {3 6}   | {3}     | {4}     | 1 |
+   | {3}     | {3}     | {4}     | 0 |
+   | {4}     | {5 6}   | {5 6}   | 0 |
+   | {5 6}   | {6}     | {∅}     | 1 |
+   | {6}     | {∅}     | {∅}     | 1 |
+   -----------------------------------
+
+   -----------------
+   |   | a | b | l |
+   -----------------
+   | 1 | 2 | 2 | 0 |
+   | 2 | 3 | - | 1 |
+   | 3 | 4 | 5 | 1 |
+   | 4 | 4 | 5 | 0 |
+   | 5 | 6 | 6 | 0 |
+   | 6 | 7 | - | 1 |
+   | 7 | - | - | 1 |
+   -----------------
+   Parsing: done!
+   ```
+
+6. **[By hand]** Based on output, we can now draw deterministic automata:
+
+   ![Result diagram](images_for_readme/script_02_example_01_result.png)
 
 ## Contribution
 
