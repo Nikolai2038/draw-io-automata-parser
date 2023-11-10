@@ -171,13 +171,18 @@ function fill_data_for_script_2() {
   VARIABLES_NAME_COUNT="${#VARIABLES_NAMES[@]}"
 
   local column_id=0
-  table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02}" "0" "$((column_id++))" "" || return "$?"
+  table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02_1}" "0" "${column_id}" "" || return "$?"
+  table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02_2}" "0" "${column_id}" "" || return "$?"
+  ((column_id++))
 
   local variable_name
   for variable_name in "${VARIABLES_NAMES[@]}"; do
-    table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02}" "0" "$((column_id++))" "${variable_name}" || return "$?"
+    table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02_1}" "0" "${column_id}" "${variable_name}" || return "$?"
+    table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02_2}" "0" "${column_id}" "${variable_name}" || return "$?"
+    ((column_id++))
   done
-  table_add_separator_after_row "${TABLE_NAME_FOR_SCRIPT_02}" "0" || return "$?"
+  table_add_separator_after_row "${TABLE_NAME_FOR_SCRIPT_02_1}" "0" || return "$?"
+  table_add_separator_after_row "${TABLE_NAME_FOR_SCRIPT_02_2}" "0" || return "$?"
 
   return 0
 }

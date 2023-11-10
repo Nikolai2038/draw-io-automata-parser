@@ -44,7 +44,8 @@ function get_text_hash() {
   eval "cd \"\${source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")}\"" || exit "$?"
 }
 
-export TABLE_NAME_FOR_SCRIPT_02="TABLE_NAME_FOR_SCRIPT_02"
+export TABLE_NAME_FOR_SCRIPT_02_1="TABLE_NAME_FOR_SCRIPT_02_1"
+export TABLE_NAME_FOR_SCRIPT_02_2="TABLE_NAME_FOR_SCRIPT_02_2"
 export ARRAY_CAN_GO_TO_ELLIPSE_FOR_VALUE="ARRAY_CAN_GO_TO_ELLIPSE_FOR_VALUE"
 
 export VARIABLES_NAMES

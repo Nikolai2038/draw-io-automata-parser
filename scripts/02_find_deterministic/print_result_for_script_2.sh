@@ -104,7 +104,8 @@ function print_result_for_script_2() {
   local was_error="${1:-0}" && shift
 
   # Set column name for exit automata function
-  table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02}" "0" "$((VARIABLES_NAME_COUNT + 1))" "${IS_COMBINATION_CONTAINS_LAST_ELLIPSE_COLUMN_NAME}" || return "$?"
+  table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02_1}" "0" "$((VARIABLES_NAME_COUNT + 1))" "${IS_COMBINATION_CONTAINS_LAST_ELLIPSE_COLUMN_NAME}" || return "$?"
+  table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02_2}" "0" "$((VARIABLES_NAME_COUNT + 1))" "${IS_COMBINATION_CONTAINS_LAST_ELLIPSE_COLUMN_NAME}" || return "$?"
 
   declare -a combinations=("${START_ARROW_TARGET_VALUE}")
   local combinations_count="${#combinations[@]}"
@@ -124,12 +125,14 @@ function print_result_for_script_2() {
       fi
     done
 
-    table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02}" "$((combination_id + 1))" "$((VARIABLES_NAME_COUNT + 1))" "${is_combination_contains_last_ellipse}" || return "$?"
+    table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02_1}" "$((combination_id + 1))" "$((VARIABLES_NAME_COUNT + 1))" "${is_combination_contains_last_ellipse}" || return "$?"
+    table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02_2}" "$((combination_id + 1))" "$((VARIABLES_NAME_COUNT + 1))" "${is_combination_contains_last_ellipse}" || return "$?"
 
     local combination_as_string_with_braces
     combination_as_string_with_braces="{$(print_with_delimiter "," "${combination_as_string:-"${EMPTY_SPACE_SYMBOL}"}")}" || return "$?"
 
-    table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02}" "$((combination_id + 1))" "0" "${combination_as_string_with_braces}" || return "$?"
+    table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02_1}" "$((combination_id + 1))" "0" "${combination_as_string_with_braces}" || return "$?"
+    table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02_2}" "$((combination_id + 1))" "0" "$((combination_id + 1))" || return "$?"
 
     local variable_name_id_in_list
     for ((variable_name_id_in_list = 0; variable_name_id_in_list < VARIABLES_NAME_COUNT; variable_name_id_in_list++)); do
@@ -141,8 +144,6 @@ function print_result_for_script_2() {
       local next_ellipses_for_variable_name_as_string2
       next_ellipses_for_variable_name_as_string2="{$(print_with_delimiter "," "${next_ellipses_for_variable_name_as_string:-"${EMPTY_SPACE_SYMBOL}"}")}" || return "$?"
 
-      table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02}" "$((combination_id + 1))" "$((variable_name_id_in_list + 1))" "${next_ellipses_for_variable_name_as_string2}" || return "$?"
-
       local was_already=0
       local combination_id2
       for ((combination_id2 = 0; combination_id2 < combinations_count; combination_id2++)); do
@@ -153,6 +154,9 @@ function print_result_for_script_2() {
         fi
       done
 
+      table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02_1}" "$((combination_id + 1))" "$((variable_name_id_in_list + 1))" "${next_ellipses_for_variable_name_as_string2}" || return "$?"
+      table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02_2}" "$((combination_id + 1))" "$((variable_name_id_in_list + 1))" "$((combination_id2 + 1))" || return "$?"
+
       if ((!was_already)); then
         combinations+=("${next_ellipses_for_variable_name_as_string}")
         combinations_count="${#combinations[@]}"
@@ -160,7 +164,9 @@ function print_result_for_script_2() {
     done
   done
 
-  table_print "${TABLE_NAME_FOR_SCRIPT_02}" || return "$?"
+  table_print "${TABLE_NAME_FOR_SCRIPT_02_1}" || return "$?"
+  print_success "" || return "$?"
+  table_print "${TABLE_NAME_FOR_SCRIPT_02_2}" || return "$?"
 
   return 0
 }
