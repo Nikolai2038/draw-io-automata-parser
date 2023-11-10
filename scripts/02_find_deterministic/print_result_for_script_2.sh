@@ -98,8 +98,13 @@ function find_next_ellipses_for_variable_name() {
   return 0
 }
 
+IS_COMBINATION_CONTAINS_LAST_ELLIPSE_COLUMN_NAME="l"
+
 function print_result_for_script_2() {
   local was_error="${1:-0}" && shift
+
+  # Set column name for exit automata function
+  table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02}" "0" "$((VARIABLES_NAME_COUNT + 1))" "${IS_COMBINATION_CONTAINS_LAST_ELLIPSE_COLUMN_NAME}" || return "$?"
 
   declare -a combinations=("${START_ARROW_TARGET_VALUE}")
   local combinations_count="${#combinations[@]}"
@@ -109,6 +114,17 @@ function print_result_for_script_2() {
     local combination_as_string="${combinations["${combination_id}"]}"
     declare -a combination
     IFS=" " read -r -a combination <<< "${combination_as_string}"
+
+    local is_combination_contains_last_ellipse=0
+    local ellipse_value_to_check
+    for ellipse_value_to_check in "${combination[@]}"; do
+      if [ "${ellipse_value_to_check}" == "${LAST_ELLIPSE_VALUE}" ]; then
+        is_combination_contains_last_ellipse=1
+        break
+      fi
+    done
+
+    table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02}" "$((combination_id + 1))" "$((VARIABLES_NAME_COUNT + 1))" "${is_combination_contains_last_ellipse}" || return "$?"
 
     local combination_as_string_with_braces
     combination_as_string_with_braces="{$(print_with_delimiter "," "${combination_as_string:-"${EMPTY_SPACE_SYMBOL}"}")}" || return "$?"
