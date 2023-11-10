@@ -50,9 +50,6 @@ source "../array/array_set.sh" || exit "$?"
   eval "cd \"\${source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")}\"" || exit "$?"
 }
 
-# To not do another xml parse
-LAST_ELLIPSE_VALUE=""
-
 function fill_variables_for_ellipse() {
   local ellipse_id="${1}" && shift
 
@@ -70,12 +67,14 @@ function fill_variables_for_ellipse() {
   local arrows_from_ellipse_count
   arrows_from_ellipse_count="$(get_nodes_count "${arrows_from_ellipse}" "mxCell")" || return "$?"
   if ((arrows_from_ellipse_count < 1)); then
-    if [ -n "${LAST_ELLIPSE_VALUE}" ]; then
-      print_error "Find another last ellipse (without out arrows)! It's value is ${C_HIGHLIGHT}${ellipse_value}${C_RETURN}. First found end ellipse has value ${C_HIGHLIGHT}${LAST_ELLIPSE_VALUE}${C_RETURN}." || return "$?"
-      return 1
+    if [ "${LAST_ELLIPSE_VALUE}" != "${ellipse_value}" ]; then
+      if [ -n "${LAST_ELLIPSE_VALUE}" ]; then
+        print_error "Find another last ellipse (without out arrows)! It's value is ${C_HIGHLIGHT}${ellipse_value}${C_RETURN}. First found end ellipse has value ${C_HIGHLIGHT}${LAST_ELLIPSE_VALUE}${C_RETURN}." || return "$?"
+        return 1
+      fi
+      LAST_ELLIPSE_VALUE="${ellipse_value}"
+      print_success "Found last ellipse with value ${C_HIGHLIGHT}${LAST_ELLIPSE_VALUE}${C_RETURN}!" || return "$?"
     fi
-    LAST_ELLIPSE_VALUE="${ellipse_value}"
-    print_success "Found last ellipse with value ${C_HIGHLIGHT}${LAST_ELLIPSE_VALUE}${C_RETURN}!" || return "$?"
     return 0
   fi
 
@@ -130,7 +129,7 @@ function fill_variables_for_ellipse() {
     arrow_target_id="$(get_node_attribute_value "${arrow_target_node}" "mxCell" "${ATTRIBUTE_ID}")" || return "$?"
 
     # If we encountered "ε" we will fill this ellipse with variables for ellipse which arrow "ε" is pointing
-    if [ "${arrow_value}" == "${SINGLE_ARROW}" ]; then
+    if ((IS_FOLLOW_EXP)) && [ "${arrow_value}" == "${SINGLE_ARROW}" ]; then
       fill_variables_for_ellipse "${arrow_target_id}" "${ellipse_id}" || return "$?"
     else
       local ellipse_to_add_xml

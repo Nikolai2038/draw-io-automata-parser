@@ -59,3 +59,8 @@ export ELLIPSES_NAME_COUNT=0
 export SINGLE_ARROW="ε"
 
 export EMPTY_SPACE_SYMBOL="∅"
+
+export IS_COMBINATION_CONTAINS_LAST_ELLIPSE_COLUMN_NAME="l"
+
+# To not do another xml parse
+export LAST_ELLIPSE_VALUE=""

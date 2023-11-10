@@ -98,8 +98,6 @@ function find_next_ellipses_for_variable_name() {
   return 0
 }
 
-IS_COMBINATION_CONTAINS_LAST_ELLIPSE_COLUMN_NAME="l"
-
 function print_result_for_script_2() {
   local was_error="${1:-0}" && shift
 
@@ -155,11 +153,15 @@ function print_result_for_script_2() {
       done
 
       table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02_1}" "$((combination_id + 1))" "$((variable_name_id_in_list + 1))" "${next_ellipses_for_variable_name_as_string2}" || return "$?"
-      table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02_2}" "$((combination_id + 1))" "$((variable_name_id_in_list + 1))" "$((combination_id2 + 1))" || return "$?"
 
-      if ((!was_already)); then
-        combinations+=("${next_ellipses_for_variable_name_as_string}")
-        combinations_count="${#combinations[@]}"
+      if ([ -n "${next_ellipses_for_variable_name_as_string}" ] || ((IS_PRINT_EMPTY_COMBINATION))); then
+        table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02_2}" "$((combination_id + 1))" "$((variable_name_id_in_list + 1))" "$((combination_id2 + 1))" || return "$?"
+        if ((!was_already)); then
+          combinations+=("${next_ellipses_for_variable_name_as_string}")
+          combinations_count="${#combinations[@]}"
+        fi
+      else
+        table_set_cell_value "${TABLE_NAME_FOR_SCRIPT_02_2}" "$((combination_id + 1))" "$((variable_name_id_in_list + 1))" "-" || return "$?"
       fi
     done
   done

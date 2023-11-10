@@ -55,11 +55,15 @@ source "./scripts/02_find_deterministic/print_result_for_script_2.sh" || exit "$
   eval "cd \"\${source_previous_directory_$(get_text_hash "${BASH_SOURCE[*]}")}\"" || exit "$?"
 }
 
-export ARRAY_INDEX_SEPARATOR="___"
+# ========================================
+# Settings
+# ========================================
+# Follow arrows with "ε"
+export IS_FOLLOW_EXP=1
 
-# Format for element: `cells["<column header 1 name><separator><column header 2 name><separator><row header name>"]="<cell value>"`
-export CELLS
-declare -A CELLS=()
+# Is print empty combination row
+export IS_PRINT_EMPTY_COMBINATION=0
+# ========================================
 
 # Start main script of Automata Parser
 function automata_parser() {
