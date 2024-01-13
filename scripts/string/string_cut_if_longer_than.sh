@@ -56,7 +56,7 @@ function string_cut_if_longer_than() {
 
   local text_length="${#text}" || return "$?"
   if [ -n "${max_length}" ] && ((text_length > max_length)); then
-    text="${text:0:"${max_length}"}"
+    text="${text:0:${max_length}}"
   fi
 
   echo -e "${text}"
